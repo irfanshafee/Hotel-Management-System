@@ -1,6 +1,7 @@
 package com.hotelbooking.hotel_booking.controller;
 
 import com.hotelbooking.hotel_booking.dto.AuthResponse;
+import com.hotelbooking.hotel_booking.dto.ApiResponse;
 import com.hotelbooking.hotel_booking.dto.LoginRequest;
 import com.hotelbooking.hotel_booking.dto.RegisterRequest;
 import com.hotelbooking.hotel_booking.service.AuthService;
@@ -22,12 +23,17 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    ResponseEntity<ApiResponse<AuthResponse>> register(
+            @Valid @RequestBody RegisterRequest request) {
+        AuthResponse response = authService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                new ApiResponse<>(HttpStatus.CREATED.value(),
+                        "User registered successfully", response));
     }
 
     @PostMapping("/login")
-    AuthResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+    ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        return new ApiResponse<>(HttpStatus.OK.value(), "Login successful",
+                authService.login(request));
     }
 }

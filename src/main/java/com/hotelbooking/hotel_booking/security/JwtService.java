@@ -6,7 +6,6 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -40,14 +39,15 @@ public class JwtService {
                 .compact();
     }
 
-    public String extractEmail(String token) {
-        return extractAllClaims(token).getSubject();
-    }
-
-    public boolean isTokenValid(String token, UserDetails userDetails) {
+    public String validateAndExtractEmail(String token) {
         Claims claims = extractAllClaims(token);
-        return claims.getSubject().equals(userDetails.getUsername())
-                && claims.getExpiration().after(new Date());
+        String email = claims.getSubject();
+        if (email == null || email.isBlank()
+                || claims.getExpiration() == null
+                || !claims.getExpiration().after(new Date())) {
+            throw new IllegalArgumentException("JWT identity or expiration is invalid");
+        }
+        return email;
     }
 
     private Claims extractAllClaims(String token) {

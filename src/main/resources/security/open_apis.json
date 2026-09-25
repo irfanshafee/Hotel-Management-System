@@ -1,0 +1,26 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/auth/register"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/login"
+  },
+  {
+    "method": "GET",
+    "path": "/api/hotels"
+  },
+  {
+    "method": "GET",
+    "path": "/api/hotels/**"
+  },
+  {
+    "method": "GET",
+    "path": "/api/rooms"
+  },
+  {
+    "method": "GET",
+    "path": "/api/rooms/**"
+  }
+]
