@@ -3,6 +3,8 @@ package com.hotelbooking.hotel_booking.repository;
 import com.hotelbooking.hotel_booking.entity.Room;
 import com.hotelbooking.hotel_booking.enums.BookingStatus;
 import com.hotelbooking.hotel_booking.enums.RoomCategory;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,8 +12,13 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface RoomRepository extends JpaRepository<Room, Long> {
+    @Lock(LockModeType.OPTIMISTIC_FORCE_INCREMENT)
+    @Query("select room from Room room where room.id = :roomId")
+    Optional<Room> findByIdForBooking(@Param("roomId") Long roomId);
+
     List<Room> findByHotelId(Long hotelId);
 
     List<Room> findByCapacity(Integer capacity);

@@ -3,10 +3,8 @@ package com.hotelbooking.hotel_booking.controller;
 import com.hotelbooking.hotel_booking.dto.ApiResponse;
 import com.hotelbooking.hotel_booking.dto.BookingResponse;
 import com.hotelbooking.hotel_booking.dto.CreateBookingRequest;
-import com.hotelbooking.hotel_booking.exception.InvalidCredentialsException;
-import com.hotelbooking.hotel_booking.security.AuthenticatedUser;
+import com.hotelbooking.hotel_booking.service.ApiSuccessMessageCatalog;
 import com.hotelbooking.hotel_booking.service.BookingService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,47 +22,40 @@ import java.util.List;
 @RequestMapping("/api/bookings")
 public class BookingController {
     private final BookingService bookingService;
+    private final ApiSuccessMessageCatalog successMessages;
 
-    public BookingController(BookingService bookingService) {
+    public BookingController(
+            BookingService bookingService, ApiSuccessMessageCatalog successMessages) {
         this.bookingService = bookingService;
+        this.successMessages = successMessages;
     }
 
     @PostMapping
     ResponseEntity<ApiResponse<BookingResponse>> createBooking(
-            @Valid @RequestBody CreateBookingRequest request,
-            HttpServletRequest httpRequest) {
-        AuthenticatedUser user = authenticatedUser(httpRequest);
-        BookingResponse response = bookingService.createBooking(user.id(), request);
+            @Valid @RequestBody CreateBookingRequest request) {
+        BookingResponse response = bookingService.createBooking(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 new ApiResponse<>(HttpStatus.CREATED.value(),
-                        "Booking created successfully", response));
+                        successMessages.get("booking.created"), response));
     }
 
     @GetMapping("/my")
-    ApiResponse<List<BookingResponse>> getMyBookings(HttpServletRequest request) {
-        return new ApiResponse<>(HttpStatus.OK.value(), "Bookings retrieved successfully",
-                bookingService.getMyBookings(authenticatedUser(request).id()));
+    ApiResponse<List<BookingResponse>> getMyBookings() {
+        return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("bookings.retrieved"),
+                bookingService.getMyBookings());
     }
 
     @GetMapping("/{bookingId}")
     ApiResponse<BookingResponse> getBooking(
-            @PathVariable Long bookingId, HttpServletRequest request) {
-        return new ApiResponse<>(HttpStatus.OK.value(), "Booking retrieved successfully",
-                bookingService.getMyBooking(authenticatedUser(request).id(), bookingId));
+            @PathVariable Long bookingId) {
+        return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("booking.retrieved"),
+                bookingService.getMyBooking(bookingId));
     }
 
     @PatchMapping("/{bookingId}/cancel")
     ApiResponse<BookingResponse> cancelBooking(
-            @PathVariable Long bookingId, HttpServletRequest request) {
-        return new ApiResponse<>(HttpStatus.OK.value(), "Booking cancelled successfully",
-                bookingService.cancelBooking(authenticatedUser(request).id(), bookingId));
-    }
-
-    private AuthenticatedUser authenticatedUser(HttpServletRequest request) {
-        Object user = request.getAttribute(AuthenticatedUser.REQUEST_ATTRIBUTE);
-        if (user instanceof AuthenticatedUser authenticatedUser) {
-            return authenticatedUser;
-        }
-        throw new InvalidCredentialsException();
+            @PathVariable Long bookingId) {
+        return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("booking.cancelled"),
+                bookingService.cancelBooking(bookingId));
     }
 }

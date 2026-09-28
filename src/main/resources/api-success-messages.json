@@ -1,0 +1,17 @@
+{
+  "auth.registered": "User registered successfully",
+  "auth.login": "Login successful",
+  "booking.created": "Booking created successfully",
+  "bookings.retrieved": "Bookings retrieved successfully",
+  "booking.retrieved": "Booking retrieved successfully",
+  "booking.cancelled": "Booking cancelled successfully",
+  "hotels.retrieved": "Hotels retrieved successfully",
+  "hotel.retrieved": "Hotel retrieved successfully",
+  "rooms.retrieved": "Rooms retrieved successfully",
+  "rooms.available.retrieved": "Available rooms retrieved successfully",
+  "room.retrieved": "Room retrieved successfully",
+  "user.retrieved": "User retrieved successfully",
+  "payment.initiated": "Payment initiated successfully",
+  "payment.successful": "Payment successful. Booking confirmed.",
+  "payment.retrieved": "Payment retrieved successfully"
+}

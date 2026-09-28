@@ -4,6 +4,7 @@ import com.hotelbooking.hotel_booking.dto.ApiResponse;
 import com.hotelbooking.hotel_booking.dto.HotelResponse;
 import com.hotelbooking.hotel_booking.dto.RoomResponse;
 import com.hotelbooking.hotel_booking.enums.RoomCategory;
+import com.hotelbooking.hotel_booking.service.ApiSuccessMessageCatalog;
 import com.hotelbooking.hotel_booking.service.HotelService;
 import com.hotelbooking.hotel_booking.service.RoomService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,21 +24,26 @@ import java.util.List;
 public class HotelController {
     private final HotelService hotelService;
     private final RoomService roomService;
+    private final ApiSuccessMessageCatalog successMessages;
 
-    public HotelController(HotelService hotelService, RoomService roomService) {
+    public HotelController(
+            HotelService hotelService,
+            RoomService roomService,
+            ApiSuccessMessageCatalog successMessages) {
         this.hotelService = hotelService;
         this.roomService = roomService;
+        this.successMessages = successMessages;
     }
 
     @GetMapping
     ApiResponse<List<HotelResponse>> getAllHotels() {
-        return new ApiResponse<>(HttpStatus.OK.value(), "Hotels retrieved successfully",
+        return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("hotels.retrieved"),
                 hotelService.getAllHotels());
     }
 
     @GetMapping("/{hotelId}")
     ApiResponse<HotelResponse> getHotel(@PathVariable Long hotelId) {
-        return new ApiResponse<>(HttpStatus.OK.value(), "Hotel retrieved successfully",
+        return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("hotel.retrieved"),
                 hotelService.getHotelById(hotelId));
     }
 
@@ -45,7 +51,7 @@ public class HotelController {
     ApiResponse<List<HotelResponse>> searchHotels(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) String name) {
-        return new ApiResponse<>(HttpStatus.OK.value(), "Hotels retrieved successfully",
+        return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("hotels.retrieved"),
                 hotelService.searchHotels(city, name));
     }
 
@@ -56,7 +62,7 @@ public class HotelController {
             @RequestParam(required = false) RoomCategory category,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice) {
-        return new ApiResponse<>(HttpStatus.OK.value(), "Rooms retrieved successfully",
+        return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("rooms.retrieved"),
                 roomService.getRoomsByHotel(hotelId, capacity, category, minPrice, maxPrice));
     }
 
@@ -70,7 +76,7 @@ public class HotelController {
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice) {
         return new ApiResponse<>(HttpStatus.OK.value(),
-                "Available rooms retrieved successfully",
+                successMessages.get("rooms.available.retrieved"),
                 roomService.getAvailableRooms(
                         hotelId, checkIn, checkOut, capacity, category, minPrice, maxPrice));
     }

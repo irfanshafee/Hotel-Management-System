@@ -5,8 +5,7 @@ import com.hotelbooking.hotel_booking.dto.LoginRequest;
 import com.hotelbooking.hotel_booking.dto.RegisterRequest;
 import com.hotelbooking.hotel_booking.entity.User;
 import com.hotelbooking.hotel_booking.enums.UserRole;
-import com.hotelbooking.hotel_booking.exception.DuplicateEmailException;
-import com.hotelbooking.hotel_booking.exception.InvalidCredentialsException;
+import com.hotelbooking.hotel_booking.exception.ApiException;
 import com.hotelbooking.hotel_booking.repository.UserRepository;
 import com.hotelbooking.hotel_booking.security.JwtService;
 import at.favre.lib.crypto.bcrypt.BCrypt;
@@ -29,7 +28,7 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         String email = normalizeEmail(request.email());
         if (userRepository.existsByEmail(email)) {
-            throw new DuplicateEmailException();
+            throw new ApiException("duplicate.email");
         }
 
         User user = new User();
@@ -46,11 +45,11 @@ public class AuthService {
     public AuthResponse login(LoginRequest request) {
         String email = normalizeEmail(request.email());
         User user = userRepository.findByEmail(email)
-                .orElseThrow(InvalidCredentialsException::new);
+                .orElseThrow(() -> new ApiException("invalid.credentials"));
         BCrypt.Result verification = BCrypt.verifyer().verify(
                 request.password().toCharArray(), user.getPassword());
         if (!verification.verified) {
-            throw new InvalidCredentialsException();
+            throw new ApiException("invalid.credentials");
         }
         return toAuthResponse(user);
     }

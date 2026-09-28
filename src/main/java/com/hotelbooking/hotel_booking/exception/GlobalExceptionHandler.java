@@ -1,6 +1,8 @@
 package com.hotelbooking.hotel_booking.exception;
 
 import com.hotelbooking.hotel_booking.dto.ApiResponse;
+import jakarta.persistence.OptimisticLockException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.ResponseEntity;
@@ -17,15 +19,25 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    @ExceptionHandler(DuplicateEmailException.class)
-    ResponseEntity<ApiResponse<Void>> handleDuplicateEmail(DuplicateEmailException exception) {
-        return buildResponse(HttpStatus.CONFLICT, exception.getMessage());
+    private final ExceptionMessageCatalog messageCatalog;
+
+    public GlobalExceptionHandler(ExceptionMessageCatalog messageCatalog) {
+        this.messageCatalog = messageCatalog;
     }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    ResponseEntity<ApiResponse<Void>> handleInvalidCredentials(
-            InvalidCredentialsException exception) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage());
+    @ExceptionHandler(ApiException.class)
+    ResponseEntity<ApiResponse<Void>> handleApiException(ApiException exception) {
+        var resolved = messageCatalog.resolve(
+                exception.getMessageKey(), exception.getMessageArguments());
+        return buildResponse(resolved.status(), resolved.message());
+    }
+
+    @ExceptionHandler({
+            OptimisticLockException.class,
+            ObjectOptimisticLockingFailureException.class
+    })
+    ResponseEntity<ApiResponse<Void>> handleOptimisticLockFailure() {
+        return response("room.unavailable");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -33,67 +45,58 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException exception) {
         String message = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getDefaultMessage() == null
-                        ? "Invalid value for " + error.getField()
+                        ? message("parameter.invalid", error.getField())
                         : error.getDefaultMessage())
                 .distinct()
                 .collect(Collectors.joining("; "));
         return buildResponse(HttpStatus.BAD_REQUEST,
-                message.isBlank() ? "Validation failed" : message);
-    }
-
-    @ExceptionHandler({HotelNotFoundException.class, RoomNotFoundException.class,
-            BookingNotFoundException.class})
-    ResponseEntity<ApiResponse<Void>> handleNotFound(RuntimeException exception) {
-        return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage());
-    }
-
-    @ExceptionHandler(InvalidFilterException.class)
-    ResponseEntity<ApiResponse<Void>> handleInvalidFilter(InvalidFilterException exception) {
-        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage());
+                message.isBlank() ? message("validation.failed") : message);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ApiResponse<Void>> handleTypeMismatch(
             MethodArgumentTypeMismatchException exception) {
-        String message = "Invalid value for parameter: " + exception.getName();
-        return buildResponse(HttpStatus.BAD_REQUEST, message);
+        return response("parameter.invalid", exception.getName());
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     ResponseEntity<ApiResponse<Void>> handleMissingParameter(
             MissingServletRequestParameterException exception) {
-        String message = "Missing required parameter: " + exception.getParameterName();
-        return buildResponse(HttpStatus.BAD_REQUEST, message);
+        return response("parameter.missing", exception.getParameterName());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiResponse<Void>> handleUnreadableRequest() {
-        return buildResponse(HttpStatus.BAD_REQUEST, "Malformed request body");
+        return response("request.body.malformed");
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
     ResponseEntity<ApiResponse<Void>> handleNoResourceFound() {
-        return buildResponse(HttpStatus.NOT_FOUND, "Resource not found");
+        return response("resource.not.found");
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     ResponseEntity<ApiResponse<Void>> handleMethodNotSupported() {
-        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, "HTTP method not allowed");
+        return response("http.method.not-allowed");
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     ResponseEntity<ApiResponse<Void>> handleMediaTypeNotSupported() {
-        return buildResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Media type not supported");
-    }
-
-    @ExceptionHandler({RoomUnavailableException.class, BookingCancellationException.class})
-    ResponseEntity<ApiResponse<Void>> handleConflict(RuntimeException exception) {
-        return buildResponse(HttpStatus.CONFLICT, exception.getMessage());
+        return response("media.type.unsupported");
     }
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiResponse<Void>> handleUnexpectedException() {
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
+        return response("internal.server.error");
+    }
+
+    private ResponseEntity<ApiResponse<Void>> response(String key, Object... arguments) {
+        var resolved = messageCatalog.resolve(key, arguments);
+        return buildResponse(resolved.status(), resolved.message());
+    }
+
+    private String message(String key, Object... arguments) {
+        return messageCatalog.resolve(key, arguments).message();
     }
 
     private ResponseEntity<ApiResponse<Void>> buildResponse(

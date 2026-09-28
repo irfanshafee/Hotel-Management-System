@@ -1,0 +1,114 @@
+{
+  "duplicate.email": {
+    "status": 409,
+    "message": "An account with this email already exists"
+  },
+  "invalid.credentials": {
+    "status": 401,
+    "message": "Invalid email or password"
+  },
+  "hotel.not.found": {
+    "status": 404,
+    "message": "Hotel not found with id: {0}"
+  },
+  "room.not.found": {
+    "status": 404,
+    "message": "Room not found with id: {0}"
+  },
+  "booking.not.found": {
+    "status": 404,
+    "message": "Booking not found with id: {0}"
+  },
+  "room.unavailable": {
+    "status": 409,
+    "message": "Room is not available for the selected dates"
+  },
+  "booking.cancellation.invalid-status": {
+    "status": 409,
+    "message": "Booking cannot be cancelled in its current status"
+  },
+  "payment.not.found": {
+    "status": 404,
+    "message": "Payment not found"
+  },
+  "payment.booking.invalid-status": {
+    "status": 409,
+    "message": "Booking cannot be paid in its current status"
+  },
+  "payment.already-paid": {
+    "status": 409,
+    "message": "Booking has already been paid"
+  },
+  "payment.transaction.duplicate": {
+    "status": 409,
+    "message": "Transaction ID has already been used."
+  },
+  "payment.failed.invalid-transaction": {
+    "status": 400,
+    "message": "Payment failed. Invalid transaction ID. Booking cancelled."
+  },
+  "search.filter.required": {
+    "status": 400,
+    "message": "At least one search parameter, city or name, is required"
+  },
+  "capacity.invalid": {
+    "status": 400,
+    "message": "Capacity must be positive"
+  },
+  "minimum.price.invalid": {
+    "status": 400,
+    "message": "Minimum price must not be negative"
+  },
+  "maximum.price.invalid": {
+    "status": 400,
+    "message": "Maximum price must not be negative"
+  },
+  "price.range.invalid": {
+    "status": 400,
+    "message": "Minimum price must not exceed maximum price"
+  },
+  "booking.dates.required": {
+    "status": 400,
+    "message": "Check-in and check-out dates are required"
+  },
+  "booking.dates.in-past": {
+    "status": 400,
+    "message": "Check-in and check-out dates must not be in the past"
+  },
+  "booking.date-range.invalid": {
+    "status": 400,
+    "message": "Check-in date must be before check-out date"
+  },
+  "validation.failed": {
+    "status": 400,
+    "message": "Validation failed"
+  },
+  "parameter.invalid": {
+    "status": 400,
+    "message": "Invalid value for parameter: {0}"
+  },
+  "parameter.missing": {
+    "status": 400,
+    "message": "Missing required parameter: {0}"
+  },
+  "request.body.malformed": {
+    "status": 400,
+    "message": "Malformed request body"
+  },
+  "resource.not.found": {
+    "status": 404,
+    "message": "Resource not found"
+  },
+  "http.method.not-allowed": {
+    "status": 405,
+    "message": "HTTP method not allowed"
+  },
+  "media.type.unsupported": {
+    "status": 415,
+    "message": "Media type not supported"
+  },
+  "internal.server.error": {
+    "status": 500,
+    "message": "Internal server error"
+  }
+}

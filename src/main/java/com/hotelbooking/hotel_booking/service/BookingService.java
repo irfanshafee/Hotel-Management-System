@@ -7,14 +7,11 @@ import com.hotelbooking.hotel_booking.entity.Hotel;
 import com.hotelbooking.hotel_booking.entity.Room;
 import com.hotelbooking.hotel_booking.entity.User;
 import com.hotelbooking.hotel_booking.enums.BookingStatus;
-import com.hotelbooking.hotel_booking.exception.BookingCancellationException;
-import com.hotelbooking.hotel_booking.exception.BookingNotFoundException;
-import com.hotelbooking.hotel_booking.exception.InvalidCredentialsException;
-import com.hotelbooking.hotel_booking.exception.RoomNotFoundException;
-import com.hotelbooking.hotel_booking.exception.RoomUnavailableException;
+import com.hotelbooking.hotel_booking.exception.ApiException;
 import com.hotelbooking.hotel_booking.repository.BookingRepository;
 import com.hotelbooking.hotel_booking.repository.RoomRepository;
 import com.hotelbooking.hotel_booking.repository.UserRepository;
+import com.hotelbooking.hotel_booking.security.AuthenticatedUserContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,28 +25,31 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
+    private final AuthenticatedUserContext authenticatedUserContext;
 
     public BookingService(
             BookingRepository bookingRepository,
             RoomRepository roomRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            AuthenticatedUserContext authenticatedUserContext) {
         this.bookingRepository = bookingRepository;
         this.roomRepository = roomRepository;
         this.userRepository = userRepository;
+        this.authenticatedUserContext = authenticatedUserContext;
     }
 
     @Transactional
-    public BookingResponse createBooking(Long authenticatedUserId, CreateBookingRequest request) {
+    public BookingResponse createBooking(CreateBookingRequest request) {
         DateRangeValidator.validate(request.checkIn(), request.checkOut());
-        User user = userRepository.findById(authenticatedUserId)
-                .orElseThrow(InvalidCredentialsException::new);
-        Room room = roomRepository.findById(request.roomId())
-                .orElseThrow(() -> new RoomNotFoundException(request.roomId()));
+        User user = userRepository.findById(currentUserId())
+                .orElseThrow(() -> new ApiException("invalid.credentials"));
+        Room room = roomRepository.findByIdForBooking(request.roomId())
+                .orElseThrow(() -> new ApiException("room.not.found", request.roomId()));
 
         long overlappingBookings = bookingRepository.countOverlappingActiveBookings(
                 room.getId(), request.checkIn(), request.checkOut(), BLOCKING_STATUSES);
         if (overlappingBookings > 0) {
-            throw new RoomUnavailableException();
+            throw new ApiException("room.unavailable");
         }
 
         Booking booking = new Booking();
@@ -62,30 +62,34 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public List<BookingResponse> getMyBookings(Long authenticatedUserId) {
-        return bookingRepository.findByUserId(authenticatedUserId)
+    public List<BookingResponse> getMyBookings() {
+        return bookingRepository.findByUserId(currentUserId())
                 .stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public BookingResponse getMyBooking(Long authenticatedUserId, Long bookingId) {
-        return toResponse(findOwnedBooking(authenticatedUserId, bookingId));
+    public BookingResponse getMyBooking(Long bookingId) {
+        return toResponse(findOwnedBooking(bookingId));
     }
 
     @Transactional
-    public BookingResponse cancelBooking(Long authenticatedUserId, Long bookingId) {
-        Booking booking = findOwnedBooking(authenticatedUserId, bookingId);
+    public BookingResponse cancelBooking(Long bookingId) {
+        Booking booking = findOwnedBooking(bookingId);
         if (booking.getStatus() != BookingStatus.PENDING
                 && booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new BookingCancellationException();
+            throw new ApiException("booking.cancellation.invalid-status");
         }
         booking.setStatus(BookingStatus.CANCELLED);
         return toResponse(bookingRepository.save(booking));
     }
 
-    private Booking findOwnedBooking(Long authenticatedUserId, Long bookingId) {
-        return bookingRepository.findByIdAndUserId(bookingId, authenticatedUserId)
-                .orElseThrow(() -> new BookingNotFoundException(bookingId));
+    private Booking findOwnedBooking(Long bookingId) {
+        return bookingRepository.findByIdAndUserId(bookingId, currentUserId())
+                .orElseThrow(() -> new ApiException("booking.not.found", bookingId));
+    }
+
+    private Long currentUserId() {
+        return authenticatedUserContext.getRequiredUser().id();
     }
 
     private BookingResponse toResponse(Booking booking) {

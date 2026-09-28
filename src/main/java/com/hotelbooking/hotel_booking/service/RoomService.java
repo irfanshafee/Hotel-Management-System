@@ -4,9 +4,7 @@ import com.hotelbooking.hotel_booking.dto.RoomResponse;
 import com.hotelbooking.hotel_booking.entity.Room;
 import com.hotelbooking.hotel_booking.enums.BookingStatus;
 import com.hotelbooking.hotel_booking.enums.RoomCategory;
-import com.hotelbooking.hotel_booking.exception.HotelNotFoundException;
-import com.hotelbooking.hotel_booking.exception.InvalidFilterException;
-import com.hotelbooking.hotel_booking.exception.RoomNotFoundException;
+import com.hotelbooking.hotel_booking.exception.ApiException;
 import com.hotelbooking.hotel_booking.repository.HotelRepository;
 import com.hotelbooking.hotel_booking.repository.RoomRepository;
 import org.springframework.stereotype.Service;
@@ -32,7 +30,7 @@ public class RoomService {
             BigDecimal minPrice, BigDecimal maxPrice) {
         validateFilters(capacity, minPrice, maxPrice);
         if (!hotelRepository.existsById(hotelId)) {
-            throw new HotelNotFoundException(hotelId);
+            throw new ApiException("hotel.not.found", hotelId);
         }
         return roomRepository.findByHotelAndFilters(
                         hotelId, capacity, category, minPrice, maxPrice)
@@ -42,7 +40,7 @@ public class RoomService {
     public RoomResponse getRoomById(Long roomId) {
         return roomRepository.findById(roomId)
                 .map(this::toResponse)
-                .orElseThrow(() -> new RoomNotFoundException(roomId));
+                .orElseThrow(() -> new ApiException("room.not.found", roomId));
     }
 
     public List<RoomResponse> getAvailableRooms(
@@ -52,7 +50,7 @@ public class RoomService {
         DateRangeValidator.validate(checkIn, checkOut);
         validateFilters(capacity, minPrice, maxPrice);
         if (!hotelRepository.existsById(hotelId)) {
-            throw new HotelNotFoundException(hotelId);
+            throw new ApiException("hotel.not.found", hotelId);
         }
 
         return roomRepository.findAvailableByHotelAndFilters(
@@ -64,16 +62,16 @@ public class RoomService {
 
     private void validateFilters(Integer capacity, BigDecimal minPrice, BigDecimal maxPrice) {
         if (capacity != null && capacity <= 0) {
-            throw new InvalidFilterException("Capacity must be positive");
+            throw new ApiException("capacity.invalid");
         }
         if (minPrice != null && minPrice.signum() < 0) {
-            throw new InvalidFilterException("Minimum price must not be negative");
+            throw new ApiException("minimum.price.invalid");
         }
         if (maxPrice != null && maxPrice.signum() < 0) {
-            throw new InvalidFilterException("Maximum price must not be negative");
+            throw new ApiException("maximum.price.invalid");
         }
         if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
-            throw new InvalidFilterException("Minimum price must not exceed maximum price");
+            throw new ApiException("price.range.invalid");
         }
     }
 

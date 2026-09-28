@@ -4,6 +4,7 @@ import com.hotelbooking.hotel_booking.dto.ApiResponse;
 import com.hotelbooking.hotel_booking.entity.User;
 import com.hotelbooking.hotel_booking.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
+import jakarta.persistence.Version;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,14 +25,17 @@ public class JwtAuthenticationFilter implements Filter {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final OpenApiRegistry openApiRegistry;
+    private final AuthenticatedUserContext authenticatedUserContext;
 
     public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository,
                                    ObjectMapper objectMapper,
-                                   OpenApiRegistry openApiRegistry) {
+                                   OpenApiRegistry openApiRegistry,
+                                   AuthenticatedUserContext authenticatedUserContext) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
         this.openApiRegistry = openApiRegistry;
+        this.authenticatedUserContext = authenticatedUserContext;
     }
 
     @Override
@@ -62,6 +66,7 @@ public class JwtAuthenticationFilter implements Filter {
             return;
         }
 
+        AuthenticatedUser authenticatedUser;
         try {
             String email = jwtService.validateAndExtractEmail(token);
             User user = userRepository.findByEmail(email).orElse(null);
@@ -70,13 +75,19 @@ public class JwtAuthenticationFilter implements Filter {
                 return;
             }
 
-            request.setAttribute(
-                    AuthenticatedUser.REQUEST_ATTRIBUTE,
-                    new AuthenticatedUser(
-                            user.getId(), user.getName(), user.getEmail(), user.getRole()));
-            filterChain.doFilter(request, response);
+            authenticatedUser = new AuthenticatedUser(
+                    user.getId(), user.getName(), user.getEmail(), user.getRole());
         } catch (JwtException | IllegalArgumentException exception) {
             writeUnauthorized(response);
+            return;
+        }
+
+        request.setAttribute(AuthenticatedUser.REQUEST_ATTRIBUTE, authenticatedUser);
+        authenticatedUserContext.set(authenticatedUser);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            authenticatedUserContext.clear();
         }
     }
 

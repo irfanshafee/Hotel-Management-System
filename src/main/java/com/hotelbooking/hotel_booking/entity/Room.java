@@ -20,6 +20,10 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    private long version;
+
     @Column(name = "room_number", nullable = false)
     private String roomNumber;
 

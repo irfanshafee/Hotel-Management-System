@@ -2,8 +2,7 @@ package com.hotelbooking.hotel_booking.service;
 
 import com.hotelbooking.hotel_booking.dto.HotelResponse;
 import com.hotelbooking.hotel_booking.entity.Hotel;
-import com.hotelbooking.hotel_booking.exception.HotelNotFoundException;
-import com.hotelbooking.hotel_booking.exception.InvalidFilterException;
+import com.hotelbooking.hotel_booking.exception.ApiException;
 import com.hotelbooking.hotel_booking.repository.HotelRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,14 +25,14 @@ public class HotelService {
     public HotelResponse getHotelById(Long id) {
         return hotelRepository.findById(id)
                 .map(this::toResponse)
-                .orElseThrow(() -> new HotelNotFoundException(id));
+                .orElseThrow(() -> new ApiException("hotel.not.found", id));
     }
 
     public List<HotelResponse> searchHotels(String city, String name) {
         String normalizedCity = normalize(city);
         String normalizedName = normalize(name);
         if (normalizedCity == null && normalizedName == null) {
-            throw new InvalidFilterException("At least one search parameter, city or name, is required");
+            throw new ApiException("search.filter.required");
         }
 
         List<Hotel> hotels;
