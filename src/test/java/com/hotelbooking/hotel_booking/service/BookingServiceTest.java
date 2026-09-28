@@ -19,8 +19,11 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -66,8 +69,57 @@ class BookingServiceTest {
         var response = bookingService.createBooking(request);
 
         assertEquals(BookingStatus.PENDING, response.status());
+        assertNotNull(response.bookingReference());
         verify(roomRepository).findByIdForBooking(3L);
         verify(roomRepository, never()).findById(3L);
+    }
+
+    @Test
+    void newlyConstructedBookingsReceiveUniquePublicReferences() {
+        Booking first = new Booking();
+        Booking second = new Booking();
+
+        assertNotNull(first.getBookingReference());
+        assertNotNull(second.getBookingReference());
+        assertNotEquals(first.getBookingReference(), second.getBookingReference());
+    }
+
+    @Test
+    void retrievesOwnedBookingByPublicReference() {
+        Booking booking = pendingBooking();
+        UUID reference = booking.getBookingReference();
+        when(bookingRepository.findByBookingReferenceAndUserId(reference, 1L))
+                .thenReturn(Optional.of(booking));
+
+        var response = bookingService.getMyBooking(reference);
+
+        assertEquals(reference, response.bookingReference());
+    }
+
+    @Test
+    void foreignBookingReferenceIsReportedAsNotFound() {
+        UUID reference = UUID.randomUUID();
+        when(bookingRepository.findByBookingReferenceAndUserId(reference, 1L))
+                .thenReturn(Optional.empty());
+
+        ApiException exception = assertThrows(
+                ApiException.class, () -> bookingService.getMyBooking(reference));
+
+        assertEquals("booking.not.found", exception.getMessageKey());
+    }
+
+    @Test
+    void cancelsOwnedBookingByPublicReference() {
+        Booking booking = pendingBooking();
+        UUID reference = booking.getBookingReference();
+        when(bookingRepository.findByBookingReferenceAndUserId(reference, 1L))
+                .thenReturn(Optional.of(booking));
+        when(bookingRepository.save(booking)).thenReturn(booking);
+
+        var response = bookingService.cancelBooking(reference);
+
+        assertEquals(BookingStatus.CANCELLED, response.status());
+        assertEquals(reference, response.bookingReference());
     }
 
     @Test
@@ -112,5 +164,16 @@ class BookingServiceTest {
         room.setCapacity(2);
         room.setPrice(new BigDecimal("3000.00"));
         return room;
+    }
+
+    private Booking pendingBooking() {
+        Booking booking = new Booking();
+        booking.setId(25L);
+        booking.setUser(user());
+        booking.setRoom(room());
+        booking.setStartDate(LocalDate.now().plusDays(10));
+        booking.setEndDate(LocalDate.now().plusDays(15));
+        booking.setStatus(BookingStatus.PENDING);
+        return booking;
     }
 }

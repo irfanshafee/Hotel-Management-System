@@ -90,7 +90,7 @@ export default function HotelDetailsPage() {
         checkIn: dates.checkIn,
         checkOut: dates.checkOut,
       })
-      navigate(`/checkout/${booking.bookingId}`)
+      navigate(`/checkout/${booking.bookingReference}`)
     } catch (bookingError) {
       setError(bookingError.message)
     } finally {

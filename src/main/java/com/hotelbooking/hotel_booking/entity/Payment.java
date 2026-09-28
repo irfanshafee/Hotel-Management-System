@@ -3,15 +3,18 @@ package com.hotelbooking.hotel_booking.entity;
 import com.hotelbooking.hotel_booking.enums.PaymentMethod;
 import com.hotelbooking.hotel_booking.enums.PaymentStatus;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "payments", uniqueConstraints = @UniqueConstraint(
+        name = "uk_payments_payment_reference", columnNames = "payment_reference"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,6 +22,11 @@ public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Setter(AccessLevel.NONE)
+    @Column(name = "payment_reference", nullable = false, updatable = false,
+            columnDefinition = "uuid")
+    private UUID paymentReference = UUID.randomUUID();
 
     @OneToOne(optional = false)
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
@@ -48,7 +56,8 @@ public class Payment {
     private LocalDateTime createdAt;
 
     @PrePersist
-    void setCreationTime() {
+    void prepareForInsert() {
+        if (paymentReference == null) paymentReference = UUID.randomUUID();
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
 }

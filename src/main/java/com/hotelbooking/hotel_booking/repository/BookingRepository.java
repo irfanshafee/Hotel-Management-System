@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUserId(Long userId);
@@ -17,7 +18,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByStatus(BookingStatus status);
 
-    Optional<Booking> findByIdAndUserId(Long bookingId, Long userId);
+    Optional<Booking> findByBookingReferenceAndUserId(
+            UUID bookingReference, Long userId);
 
     @Query("""
             select count(booking) from Booking booking

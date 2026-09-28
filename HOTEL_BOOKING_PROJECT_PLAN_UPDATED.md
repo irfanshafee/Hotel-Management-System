@@ -253,7 +253,7 @@ Example successful creation:
   "responseCode": 201,
   "responseMessage": "Booking created successfully",
   "data": {
-    "bookingId": 12,
+    "bookingReference": "7a9d71cb-3b74-4f53-91e8-5c3f2e04e3a1",
     "status": "PENDING"
   }
 }
@@ -472,8 +472,8 @@ Implemented:
 ``` text
 POST  /api/bookings
 GET   /api/bookings/my
-GET   /api/bookings/{bookingId}
-PATCH /api/bookings/{bookingId}/cancel
+POST  /api/bookings/details
+PATCH /api/bookings/cancel
 ```
 
 All booking endpoints require authentication.
@@ -515,7 +515,8 @@ An unavailable room returns:
 
 ### Ownership Protection
 
-Booking ownership queries use both booking ID and authenticated user ID.
+Booking ownership queries use both the public booking UUID reference and
+authenticated user ID. Internal database IDs remain server-side only.
 
 A user cannot view or cancel another user's booking.
 

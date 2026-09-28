@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class BookingService {
@@ -68,13 +69,13 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public BookingResponse getMyBooking(Long bookingId) {
-        return toResponse(findOwnedBooking(bookingId));
+    public BookingResponse getMyBooking(UUID bookingReference) {
+        return toResponse(findOwnedBooking(bookingReference));
     }
 
     @Transactional
-    public BookingResponse cancelBooking(Long bookingId) {
-        Booking booking = findOwnedBooking(bookingId);
+    public BookingResponse cancelBooking(UUID bookingReference) {
+        Booking booking = findOwnedBooking(bookingReference);
         if (booking.getStatus() != BookingStatus.PENDING
                 && booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new ApiException("booking.cancellation.invalid-status");
@@ -83,9 +84,10 @@ public class BookingService {
         return toResponse(bookingRepository.save(booking));
     }
 
-    private Booking findOwnedBooking(Long bookingId) {
-        return bookingRepository.findByIdAndUserId(bookingId, currentUserId())
-                .orElseThrow(() -> new ApiException("booking.not.found", bookingId));
+    private Booking findOwnedBooking(UUID bookingReference) {
+        return bookingRepository.findByBookingReferenceAndUserId(
+                        bookingReference, currentUserId())
+                .orElseThrow(() -> new ApiException("booking.not.found"));
     }
 
     private Long currentUserId() {
@@ -97,8 +99,9 @@ public class BookingService {
         Room room = booking.getRoom();
         Hotel hotel = room.getHotel();
         return new BookingResponse(
-                booking.getId(), booking.getStatus(), booking.getStartDate(), booking.getEndDate(),
-                booking.getCreatedAt(), user.getId(), user.getName(), user.getEmail(),
+                booking.getBookingReference(), booking.getStatus(),
+                booking.getStartDate(), booking.getEndDate(),
+                booking.getCreatedAt(), user.getName(), user.getEmail(),
                 hotel.getId(), hotel.getName(), hotel.getCity(), room.getId(),
                 room.getRoomNumber(), room.getCategory(), room.getCapacity(), room.getPrice());
     }

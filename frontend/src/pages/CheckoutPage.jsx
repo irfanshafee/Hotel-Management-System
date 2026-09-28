@@ -11,7 +11,7 @@ import StatusBadge from '../components/StatusBadge'
 import { differenceInNights, formatDate, formatMoney } from '../utils/formatters'
 
 export default function CheckoutPage() {
-  const { bookingId } = useParams()
+  const { bookingReference } = useParams()
   const [booking, setBooking] = useState(null)
   const [payment, setPayment] = useState(null)
   const [transactionId, setTransactionId] = useState('')
@@ -27,17 +27,17 @@ export default function CheckoutPage() {
       setLoading(true)
       setError('')
       try {
-        const bookingData = await getBooking(bookingId)
+        const bookingData = await getBooking(bookingReference)
         if (!active) return
         setBooking(bookingData)
 
         let paymentData
         try {
-          paymentData = await getPaymentForBooking(bookingId)
+          paymentData = await getPaymentForBooking(bookingReference)
         } catch (requestError) {
           if (!(requestError instanceof ApiError) || requestError.status !== 404) throw requestError
           if (bookingData.status !== 'PENDING') throw requestError
-          paymentData = await initiatePayment(bookingId)
+          paymentData = await initiatePayment(bookingReference)
         }
         if (active) setPayment(paymentData)
       } catch (requestError) {
@@ -51,7 +51,7 @@ export default function CheckoutPage() {
     return () => {
       active = false
     }
-  }, [bookingId])
+  }, [bookingReference])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -59,7 +59,7 @@ export default function CheckoutPage() {
     setError('')
     setResultMessage('')
     try {
-      const updatedPayment = await submitPayment(payment.paymentId, transactionId)
+      const updatedPayment = await submitPayment(payment.paymentReference, transactionId)
       setPayment(updatedPayment)
       setBooking((current) => ({ ...current, status: updatedPayment.bookingStatus }))
       setResultMessage('Payment successful. Booking confirmed.')
@@ -97,7 +97,7 @@ export default function CheckoutPage() {
         <div>
           <span className="eyebrow">Secure checkout</span>
           <h1>{isFinal ? 'Payment result' : 'Complete your booking'}</h1>
-          <p>Booking #{booking.bookingId}</p>
+          <p>Booking reference: {booking.bookingReference}</p>
         </div>
         <StatusBadge status={payment?.bookingStatus || booking.status} />
       </div>
@@ -166,7 +166,8 @@ export default function CheckoutPage() {
             <div className="payment-receipt">
               {resultMessage && <p>{resultMessage}</p>}
               <dl>
-                <div><dt>Payment ID</dt><dd>#{payment.paymentId}</dd></div>
+                <div><dt>Payment reference</dt><dd>{payment.paymentReference}</dd></div>
+                <div><dt>Booking reference</dt><dd>{payment.bookingReference}</dd></div>
                 <div><dt>Transaction ID</dt><dd>{payment.transactionId || '—'}</dd></div>
                 <div><dt>Amount</dt><dd>{formatMoney(payment.amount)}</dd></div>
                 <div><dt>Payment status</dt><dd><StatusBadge status={payment.paymentStatus} /></dd></div>

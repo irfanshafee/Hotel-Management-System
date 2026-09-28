@@ -2,15 +2,18 @@ package com.hotelbooking.hotel_booking.entity;
 
 import com.hotelbooking.hotel_booking.enums.BookingStatus;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
-@Table(name = "bookings")
+@Table(name = "bookings", uniqueConstraints = @UniqueConstraint(
+        name = "uk_bookings_booking_reference", columnNames = "booking_reference"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,6 +21,11 @@ public class Booking {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Setter(AccessLevel.NONE)
+    @Column(name = "booking_reference", nullable = false, updatable = false,
+            columnDefinition = "uuid")
+    private UUID bookingReference = UUID.randomUUID();
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -44,7 +52,8 @@ public class Booking {
     private Payment payment;
 
     @PrePersist
-    void setCreationTime() {
+    void prepareForInsert() {
+        if (bookingReference == null) bookingReference = UUID.randomUUID();
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
 }

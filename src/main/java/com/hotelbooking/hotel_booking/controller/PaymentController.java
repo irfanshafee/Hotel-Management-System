@@ -1,16 +1,16 @@
 package com.hotelbooking.hotel_booking.controller;
 
 import com.hotelbooking.hotel_booking.dto.ApiResponse;
+import com.hotelbooking.hotel_booking.dto.BookingReferenceRequest;
 import com.hotelbooking.hotel_booking.dto.PaymentResponse;
 import com.hotelbooking.hotel_booking.dto.PaymentSubmissionRequest;
 import com.hotelbooking.hotel_booking.dto.PaymentSubmissionResult;
 import com.hotelbooking.hotel_booking.exception.ExceptionMessageCatalog;
 import com.hotelbooking.hotel_booking.service.ApiSuccessMessageCatalog;
 import com.hotelbooking.hotel_booking.service.PaymentService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,20 +32,19 @@ public class PaymentController {
         this.exceptionMessages = exceptionMessages;
     }
 
-    @PostMapping("/initiate/{bookingId}")
-    ApiResponse<PaymentResponse> initiatePayment(@PathVariable Long bookingId) {
-        PaymentResponse payment = paymentService.initiatePayment(bookingId);
+    @PostMapping("/initiate")
+    ApiResponse<PaymentResponse> initiatePayment(
+            @Valid @RequestBody BookingReferenceRequest request) {
+        PaymentResponse payment = paymentService.initiatePayment(request.bookingReference());
         return new ApiResponse<>(
                 HttpStatus.OK.value(), successMessages.get("payment.initiated"), payment);
     }
 
-    @PostMapping("/{paymentId}/submit")
+    @PostMapping("/submit")
     ResponseEntity<ApiResponse<PaymentResponse>> submitPayment(
-            @PathVariable Long paymentId,
-            @RequestBody PaymentSubmissionRequest submission) {
-        String transactionId = submission == null ? null : submission.transactionId();
+            @Valid @RequestBody PaymentSubmissionRequest submission) {
         PaymentSubmissionResult result = paymentService.submitPayment(
-                paymentId, transactionId);
+                submission.paymentReference(), submission.transactionId());
 
         HttpStatus status = result.successful() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
         String message = result.successful()
@@ -55,9 +54,11 @@ public class PaymentController {
                 new ApiResponse<>(status.value(), message, result.payment()));
     }
 
-    @GetMapping("/booking/{bookingId}")
-    ApiResponse<PaymentResponse> getPaymentForBooking(@PathVariable Long bookingId) {
-        PaymentResponse payment = paymentService.getPaymentForBooking(bookingId);
+    @PostMapping("/booking")
+    ApiResponse<PaymentResponse> getPaymentForBooking(
+            @Valid @RequestBody BookingReferenceRequest request) {
+        PaymentResponse payment = paymentService.getPaymentForBooking(
+                request.bookingReference());
         return new ApiResponse<>(
                 HttpStatus.OK.value(), successMessages.get("payment.retrieved"), payment);
     }

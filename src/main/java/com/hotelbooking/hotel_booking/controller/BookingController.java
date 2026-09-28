@@ -1,6 +1,7 @@
 package com.hotelbooking.hotel_booking.controller;
 
 import com.hotelbooking.hotel_booking.dto.ApiResponse;
+import com.hotelbooking.hotel_booking.dto.BookingReferenceRequest;
 import com.hotelbooking.hotel_booking.dto.BookingResponse;
 import com.hotelbooking.hotel_booking.dto.CreateBookingRequest;
 import com.hotelbooking.hotel_booking.service.ApiSuccessMessageCatalog;
@@ -10,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,17 +45,17 @@ public class BookingController {
                 bookingService.getMyBookings());
     }
 
-    @GetMapping("/{bookingId}")
+    @PostMapping("/details")
     ApiResponse<BookingResponse> getBooking(
-            @PathVariable Long bookingId) {
+            @Valid @RequestBody BookingReferenceRequest request) {
         return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("booking.retrieved"),
-                bookingService.getMyBooking(bookingId));
+                bookingService.getMyBooking(request.bookingReference()));
     }
 
-    @PatchMapping("/{bookingId}/cancel")
+    @PatchMapping("/cancel")
     ApiResponse<BookingResponse> cancelBooking(
-            @PathVariable Long bookingId) {
+            @Valid @RequestBody BookingReferenceRequest request) {
         return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("booking.cancelled"),
-                bookingService.cancelBooking(bookingId));
+                bookingService.cancelBooking(request.bookingReference()));
     }
 }

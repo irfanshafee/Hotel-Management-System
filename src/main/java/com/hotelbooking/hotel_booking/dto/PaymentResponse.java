@@ -6,10 +6,11 @@ import com.hotelbooking.hotel_booking.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record PaymentResponse(
-        Long paymentId,
-        Long bookingId,
+        UUID paymentReference,
+        UUID bookingReference,
         String transactionId,
         BigDecimal amount,
         BigDecimal paidAmount,

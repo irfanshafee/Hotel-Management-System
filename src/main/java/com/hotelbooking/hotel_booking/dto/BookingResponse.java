@@ -6,14 +6,14 @@ import com.hotelbooking.hotel_booking.enums.RoomCategory;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record BookingResponse(
-        Long bookingId,
+        UUID bookingReference,
         BookingStatus status,
         LocalDate checkIn,
         LocalDate checkOut,
         LocalDateTime createdAt,
-        Long userId,
         String userName,
         String userEmail,
         Long hotelId,

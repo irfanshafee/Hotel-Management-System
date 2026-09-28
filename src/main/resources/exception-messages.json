@@ -17,7 +17,7 @@
   },
   "booking.not.found": {
     "status": 404,
-    "message": "Booking not found with id: {0}"
+    "message": "Booking not found"
   },
   "room.unavailable": {
     "status": 409,
