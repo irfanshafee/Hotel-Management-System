@@ -13,7 +13,7 @@ export default function SearchBar({ filters, cities, errors, onChange, onSubmit,
       </label>
 
       <label className="search-field">
-        <span>Check-in</span>
+        <span>Check-in (optional)</span>
         <input
           type="date"
           min={todayString()}
@@ -24,7 +24,7 @@ export default function SearchBar({ filters, cities, errors, onChange, onSubmit,
       </label>
 
       <label className="search-field">
-        <span>Check-out</span>
+        <span>Check-out (optional)</span>
         <input
           type="date"
           min={nextDateString(filters.checkIn)}

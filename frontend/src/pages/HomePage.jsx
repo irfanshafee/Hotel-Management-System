@@ -17,9 +17,12 @@ const initialFilters = {
 
 function validate(filters) {
   const errors = {}
-  if (!filters.city) errors.city = 'Please select a city.'
-  if (!filters.checkIn) errors.checkIn = 'Check-in is required.'
-  if (!filters.checkOut) errors.checkOut = 'Check-out is required.'
+  if (filters.checkIn && !filters.checkOut) {
+    errors.checkOut = 'Select a check-out date or leave both dates empty.'
+  }
+  if (!filters.checkIn && filters.checkOut) {
+    errors.checkIn = 'Select a check-in date or leave both dates empty.'
+  }
   if (filters.checkIn && filters.checkIn < todayString()) {
     errors.checkIn = 'Check-in cannot be in the past.'
   }
@@ -78,7 +81,9 @@ export default function HomePage() {
     setSearching(true)
     setLoadError('')
     try {
-      const results = await searchHotels({ city: filters.city })
+      const results = filters.city
+        ? await searchHotels({ city: filters.city })
+        : allHotels
       setHotels(results)
       setAppliedFilters({ ...filters })
       setHasSearched(true)
@@ -98,7 +103,7 @@ export default function HomePage() {
           <div className="hero__copy">
             <span className="eyebrow eyebrow--light">Find your next stay</span>
             <h1>Comfortable rooms, clear prices, easy booking.</h1>
-            <p>Choose your dates and discover rooms that are actually available.</p>
+            <p>Browse hotels freely, then add dates whenever you are ready to check availability or book.</p>
           </div>
           <SearchBar
             filters={filters}
@@ -125,7 +130,11 @@ export default function HomePage() {
           <div className="section-heading">
             <div>
               <span className="eyebrow">Places to stay</span>
-              <h2>{hasSearched ? `Hotels in ${appliedFilters.city}` : 'Explore our hotels'}</h2>
+              <h2>
+                {hasSearched && appliedFilters.city
+                  ? `Hotels in ${appliedFilters.city}`
+                  : 'Explore our hotels'}
+              </h2>
             </div>
             {!loading && !loadError && <span className="result-count">{hotels.length} results</span>}
           </div>

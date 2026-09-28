@@ -11,7 +11,7 @@ export default function FilterSidebar({ filters, cities, onChange, onApply, busy
       <label className="filter-group">
         <span className="filter-group__label">City</span>
         <select value={filters.city} onChange={(event) => onChange('city', event.target.value)}>
-          <option value="">Select a city</option>
+          <option value="">Any city</option>
           {cities.map((city) => <option key={city} value={city}>{city}</option>)}
         </select>
       </label>
