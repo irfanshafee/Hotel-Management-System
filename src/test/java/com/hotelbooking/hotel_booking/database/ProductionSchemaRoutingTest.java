@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
                 "DB_USERNAME=sa",
                 "DB_PASSWORD=",
                 "JWT_SECRET=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
+                "CORS_ALLOWED_ORIGINS=https://frontend.example.test",
                 "spring.datasource.driver-class-name=org.h2.Driver",
                 "spring.datasource.hikari.connection-init-sql=CREATE SCHEMA IF NOT EXISTS \"Production\"",
                 "spring.flyway.enabled=false",

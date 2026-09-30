@@ -1,5 +1,6 @@
 package com.hotelbooking.hotel_booking.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,17 +9,32 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 public class CorsConfiguration {
-    private static final String DEVELOPMENT_FRONTEND_ORIGIN = "http://localhost:5173";
+    private final List<String> allowedOrigins;
+
+    public CorsConfiguration(
+            @Value("${app.cors.allowed-origins}") String configuredOrigins) {
+        this.allowedOrigins = Arrays.stream(configuredOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .distinct()
+                .toList();
+
+        if (allowedOrigins.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "app.cors.allowed-origins must contain at least one origin");
+        }
+    }
 
     @Bean
     FilterRegistrationBean<CorsFilter> corsFilterRegistration() {
         org.springframework.web.cors.CorsConfiguration configuration =
                 new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(DEVELOPMENT_FRONTEND_ORIGIN));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setMaxAge(3600L);

@@ -27,6 +27,11 @@ class ProductionDatabaseConfigurationTest {
         assertEquals("\"Production\"",
                 prod.getProperty(
                         "spring.jpa.properties.hibernate.default_schema"));
+        assertEquals("${PORT:8080}", prod.getProperty("server.port"));
+        assertEquals("health",
+                prod.getProperty("management.endpoints.web.exposure.include"));
+        assertEquals("never",
+                prod.getProperty("management.endpoint.health.show-details"));
     }
 
     @Test
@@ -54,6 +59,23 @@ class ProductionDatabaseConfigurationTest {
         assertTrue(sql.contains("CREATE TABLE IF NOT EXISTS \"Production\".users"));
         assertTrue(sql.contains("REFERENCES \"Production\".bookings (id)"));
         assertFalse(sql.contains("public."));
+    }
+
+    @Test
+    void existingPublicDataMigrationOnlyCopiesData() throws IOException {
+        String sql = resourceText(
+                "db/migration/V2__copy_existing_public_data_to_production.sql");
+        String executableSql = sql.replaceAll("(?m)--.*$", " ")
+                .toLowerCase();
+
+        assertFalse(executableSql.matches("(?s).*\\bdrop\\b.*"));
+        assertFalse(executableSql.matches("(?s).*\\btruncate\\b.*"));
+        assertFalse(executableSql.matches("(?s).*\\bdelete\\s+from\\b.*"));
+        assertTrue(sql.contains("INSERT INTO \"Production\".users"));
+        assertTrue(sql.contains("FROM public.users"));
+        assertTrue(sql.contains("INSERT INTO \"Production\".payments"));
+        assertTrue(sql.contains("FROM public.payments"));
+        assertTrue(sql.contains("ON CONFLICT (id) DO NOTHING"));
     }
 
     private PropertySource<?> loadYaml(String resource) throws IOException {

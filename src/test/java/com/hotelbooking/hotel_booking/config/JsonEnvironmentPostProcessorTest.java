@@ -51,4 +51,15 @@ class JsonEnvironmentPostProcessorTest {
 
         assertNull(environment.getProperty("JSON_LOADER_TEST_VALUE"));
     }
+
+    @Test
+    void doesNotLoadJsonForProductionProfile() {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("prod");
+
+        processor.postProcessEnvironment(
+                environment, new SpringApplication(Object.class));
+
+        assertNull(environment.getProperty("JSON_LOADER_TEST_VALUE"));
+    }
 }

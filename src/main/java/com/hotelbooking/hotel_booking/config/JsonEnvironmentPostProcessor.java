@@ -21,14 +21,15 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Loads flat key/value configuration from {@code .env/<profile>.json} early
- * enough for datasource auto-configuration. The property source is placed
- * below real OS environment variables so deployment-time secrets always win.
+ * Loads local-only flat key/value configuration from {@code .env/local.json}
+ * early enough for datasource auto-configuration. Production secrets must be
+ * supplied by the deployment environment, such as Railway Variables. The
+ * property source is placed below real OS environment variables.
  */
 public final class JsonEnvironmentPostProcessor
         implements EnvironmentPostProcessor, Ordered {
 
-    private static final Set<String> JSON_PROFILES = Set.of("local", "prod");
+    private static final Set<String> JSON_PROFILES = Set.of("local");
     private static final String PROPERTY_SOURCE_PREFIX = "profileJson:";
 
     @Override
