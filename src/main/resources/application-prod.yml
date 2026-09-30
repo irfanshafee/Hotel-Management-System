@@ -13,6 +13,11 @@ spring:
     schemas:
       - Production
     create-schemas: true
+    # "Production" may already contain tables from a prior safe deployment.
+    # Record version 0 first, then allow V1/V2 to run their idempotent DDL/data-copy work.
+    # Nothing is dropped, truncated, or overwritten.
+    baseline-on-migrate: true
+    baseline-version: "0"
     validate-migration-naming: true
   jpa:
     hibernate:
