@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local environment configuration ###
+# Real JSON environment files may contain database/JWT secrets.
+src/main/resources/.env/*.json
+!src/main/resources/.env/*.example.json

@@ -69,13 +69,13 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public BookingResponse getMyBooking(UUID bookingReference) {
-        return toResponse(findOwnedBooking(bookingReference));
+    public BookingResponse getMyBooking(UUID bookingUuid) {
+        return toResponse(findOwnedBooking(bookingUuid));
     }
 
     @Transactional
-    public BookingResponse cancelBooking(UUID bookingReference) {
-        Booking booking = findOwnedBooking(bookingReference);
+    public BookingResponse cancelBooking(UUID bookingUuid) {
+        Booking booking = findOwnedBooking(bookingUuid);
         if (booking.getStatus() != BookingStatus.PENDING
                 && booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new ApiException("booking.cancellation.invalid-status");
@@ -84,9 +84,9 @@ public class BookingService {
         return toResponse(bookingRepository.save(booking));
     }
 
-    private Booking findOwnedBooking(UUID bookingReference) {
-        return bookingRepository.findByBookingReferenceAndUserId(
-                        bookingReference, currentUserId())
+    private Booking findOwnedBooking(UUID bookingUuid) {
+        return bookingRepository.findByBookingUuidAndUserId(
+                        bookingUuid, currentUserId())
                 .orElseThrow(() -> new ApiException("booking.not.found"));
     }
 
@@ -99,7 +99,7 @@ public class BookingService {
         Room room = booking.getRoom();
         Hotel hotel = room.getHotel();
         return new BookingResponse(
-                booking.getBookingReference(), booking.getStatus(),
+                booking.getBookingUuid(), booking.getStatus(),
                 booking.getStartDate(), booking.getEndDate(),
                 booking.getCreatedAt(), user.getName(), user.getEmail(),
                 hotel.getId(), hotel.getName(), hotel.getCity(), room.getId(),

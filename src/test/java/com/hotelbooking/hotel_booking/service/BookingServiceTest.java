@@ -69,7 +69,7 @@ class BookingServiceTest {
         var response = bookingService.createBooking(request);
 
         assertEquals(BookingStatus.PENDING, response.status());
-        assertNotNull(response.bookingReference());
+        assertNotNull(response.bookingId());
         verify(roomRepository).findByIdForBooking(3L);
         verify(roomRepository, never()).findById(3L);
     }
@@ -79,27 +79,27 @@ class BookingServiceTest {
         Booking first = new Booking();
         Booking second = new Booking();
 
-        assertNotNull(first.getBookingReference());
-        assertNotNull(second.getBookingReference());
-        assertNotEquals(first.getBookingReference(), second.getBookingReference());
+        assertNotNull(first.getBookingUuid());
+        assertNotNull(second.getBookingUuid());
+        assertNotEquals(first.getBookingUuid(), second.getBookingUuid());
     }
 
     @Test
     void retrievesOwnedBookingByPublicReference() {
         Booking booking = pendingBooking();
-        UUID reference = booking.getBookingReference();
-        when(bookingRepository.findByBookingReferenceAndUserId(reference, 1L))
+        UUID reference = booking.getBookingUuid();
+        when(bookingRepository.findByBookingUuidAndUserId(reference, 1L))
                 .thenReturn(Optional.of(booking));
 
         var response = bookingService.getMyBooking(reference);
 
-        assertEquals(reference, response.bookingReference());
+        assertEquals(reference, response.bookingId());
     }
 
     @Test
     void foreignBookingReferenceIsReportedAsNotFound() {
         UUID reference = UUID.randomUUID();
-        when(bookingRepository.findByBookingReferenceAndUserId(reference, 1L))
+        when(bookingRepository.findByBookingUuidAndUserId(reference, 1L))
                 .thenReturn(Optional.empty());
 
         ApiException exception = assertThrows(
@@ -111,15 +111,15 @@ class BookingServiceTest {
     @Test
     void cancelsOwnedBookingByPublicReference() {
         Booking booking = pendingBooking();
-        UUID reference = booking.getBookingReference();
-        when(bookingRepository.findByBookingReferenceAndUserId(reference, 1L))
+        UUID reference = booking.getBookingUuid();
+        when(bookingRepository.findByBookingUuidAndUserId(reference, 1L))
                 .thenReturn(Optional.of(booking));
         when(bookingRepository.save(booking)).thenReturn(booking);
 
         var response = bookingService.cancelBooking(reference);
 
         assertEquals(BookingStatus.CANCELLED, response.status());
-        assertEquals(reference, response.bookingReference());
+        assertEquals(reference, response.bookingId());
     }
 
     @Test

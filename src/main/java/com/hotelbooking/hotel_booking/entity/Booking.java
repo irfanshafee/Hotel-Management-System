@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "bookings", uniqueConstraints = @UniqueConstraint(
-        name = "uk_bookings_booking_reference", columnNames = "booking_reference"))
+        name = "uk_bookings_booking_uuid", columnNames = "booking_uuid"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,9 +23,9 @@ public class Booking {
     private Long id;
 
     @Setter(AccessLevel.NONE)
-    @Column(name = "booking_reference", nullable = false, updatable = false,
+    @Column(name = "booking_uuid", nullable = false, updatable = false,
             columnDefinition = "uuid")
-    private UUID bookingReference = UUID.randomUUID();
+    private UUID bookingUuid = UUID.randomUUID();
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -53,7 +53,7 @@ public class Booking {
 
     @PrePersist
     void prepareForInsert() {
-        if (bookingReference == null) bookingReference = UUID.randomUUID();
+        if (bookingUuid == null) bookingUuid = UUID.randomUUID();
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
 }

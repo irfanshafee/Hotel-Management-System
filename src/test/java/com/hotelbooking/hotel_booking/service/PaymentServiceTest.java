@@ -52,8 +52,8 @@ class PaymentServiceTest {
     @Test
     void initiationCalculatesAmountFromNightlyRoomPrice() {
         Booking booking = pendingBooking();
-        UUID bookingReference = booking.getBookingReference();
-        when(bookingRepository.findByBookingReferenceAndUserId(bookingReference, 1L))
+        UUID bookingUuid = booking.getBookingUuid();
+        when(bookingRepository.findByBookingUuidAndUserId(bookingUuid, 1L))
                 .thenReturn(Optional.of(booking));
         when(paymentRepository.findByBookingId(25L)).thenReturn(Optional.empty());
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> {
@@ -62,28 +62,28 @@ class PaymentServiceTest {
             return payment;
         });
 
-        var response = paymentService.initiatePayment(bookingReference);
+        var response = paymentService.initiatePayment(bookingUuid);
 
         assertEquals(new BigDecimal("15000.00"), response.amount());
         assertEquals(new BigDecimal("0.00"), response.paidAmount());
         assertEquals(new BigDecimal("15000.00"), response.remainingAmount());
         assertEquals(PaymentStatus.PENDING, response.paymentStatus());
-        assertEquals(bookingReference, response.bookingReference());
-        assertNotNull(response.paymentReference());
+        assertEquals(bookingUuid, response.bookingId());
+        assertNotNull(response.paymentId());
     }
 
     @Test
     void validTransactionPaysAndConfirmsBooking() {
         Payment payment = pendingPayment();
-        when(paymentRepository.findByPaymentReferenceAndBookingUserId(
-                payment.getPaymentReference(), 1L))
+        when(paymentRepository.findByPaymentUuidAndBookingUserId(
+                payment.getPaymentUuid(), 1L))
                 .thenReturn(Optional.of(payment));
         when(paymentProcessor.isSuccessful("S 6789ABcd")).thenReturn(true);
         when(paymentRepository.existsByTransactionIdAndStatus(
                 "S 6789ABcd", PaymentStatus.PAID)).thenReturn(false);
 
         PaymentSubmissionResult result = paymentService.submitPayment(
-                payment.getPaymentReference(), "S 6789ABcd");
+                payment.getPaymentUuid(), "S 6789ABcd");
 
         assertTrue(result.successful());
         assertEquals(PaymentStatus.PAID, payment.getStatus());
@@ -98,13 +98,13 @@ class PaymentServiceTest {
     @Test
     void invalidTransactionFailsAndCancelsBookingWithoutThrowing() {
         Payment payment = pendingPayment();
-        when(paymentRepository.findByPaymentReferenceAndBookingUserId(
-                payment.getPaymentReference(), 1L))
+        when(paymentRepository.findByPaymentUuidAndBookingUserId(
+                payment.getPaymentUuid(), 1L))
                 .thenReturn(Optional.of(payment));
         when(paymentProcessor.isSuccessful("ABC123")).thenReturn(false);
 
         PaymentSubmissionResult result = paymentService.submitPayment(
-                payment.getPaymentReference(), "ABC123");
+                payment.getPaymentUuid(), "ABC123");
 
         assertFalse(result.successful());
         assertEquals(PaymentStatus.FAILED, payment.getStatus());
@@ -119,8 +119,8 @@ class PaymentServiceTest {
     @Test
     void duplicateSuccessfulTransactionDoesNotChangeSecondPaymentOrBooking() {
         Payment payment = pendingPayment();
-        when(paymentRepository.findByPaymentReferenceAndBookingUserId(
-                payment.getPaymentReference(), 1L))
+        when(paymentRepository.findByPaymentUuidAndBookingUserId(
+                payment.getPaymentUuid(), 1L))
                 .thenReturn(Optional.of(payment));
         when(paymentProcessor.isSuccessful("S ABCD1234")).thenReturn(true);
         when(paymentRepository.existsByTransactionIdAndStatus(
@@ -128,7 +128,7 @@ class PaymentServiceTest {
 
         ApiException exception = assertThrows(ApiException.class,
                 () -> paymentService.submitPayment(
-                        payment.getPaymentReference(), "S ABCD1234"));
+                        payment.getPaymentUuid(), "S ABCD1234"));
 
         assertEquals("payment.transaction.duplicate", exception.getMessageKey());
         assertEquals(PaymentStatus.PENDING, payment.getStatus());
@@ -141,7 +141,7 @@ class PaymentServiceTest {
     void foreignBookingIsReportedAsNotFound() {
         useAuthenticatedUser(2L);
         UUID reference = UUID.randomUUID();
-        when(bookingRepository.findByBookingReferenceAndUserId(reference, 2L))
+        when(bookingRepository.findByBookingUuidAndUserId(reference, 2L))
                 .thenReturn(Optional.empty());
 
         ApiException exception = assertThrows(ApiException.class,
@@ -154,7 +154,7 @@ class PaymentServiceTest {
     void foreignPaymentIsReportedAsNotFound() {
         useAuthenticatedUser(2L);
         UUID reference = UUID.randomUUID();
-        when(paymentRepository.findByPaymentReferenceAndBookingUserId(reference, 2L))
+        when(paymentRepository.findByPaymentUuidAndBookingUserId(reference, 2L))
                 .thenReturn(Optional.empty());
 
         ApiException exception = assertThrows(ApiException.class,
@@ -167,16 +167,16 @@ class PaymentServiceTest {
     void retrievesPaymentForOwnedBookingReference() {
         Payment payment = pendingPayment();
         Booking booking = payment.getBooking();
-        UUID reference = booking.getBookingReference();
-        when(bookingRepository.findByBookingReferenceAndUserId(reference, 1L))
+        UUID reference = booking.getBookingUuid();
+        when(bookingRepository.findByBookingUuidAndUserId(reference, 1L))
                 .thenReturn(Optional.of(booking));
         when(paymentRepository.findByBookingId(booking.getId()))
                 .thenReturn(Optional.of(payment));
 
         var response = paymentService.getPaymentForBooking(reference);
 
-        assertEquals(reference, response.bookingReference());
-        assertEquals(payment.getPaymentReference(), response.paymentReference());
+        assertEquals(reference, response.bookingId());
+        assertEquals(payment.getPaymentUuid(), response.paymentId());
     }
 
     private Booking pendingBooking() {

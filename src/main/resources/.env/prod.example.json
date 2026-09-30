@@ -1,0 +1,7 @@
+{
+  "DB_URL": "jdbc:postgresql://production-host:5432/production-database",
+  "DB_USERNAME": "replace-with-production-database-user",
+  "DB_PASSWORD": "replace-with-production-database-password",
+  "JWT_SECRET": "replace-with-base64-encoded-secret-of-at-least-32-bytes",
+  "JWT_EXPIRATION": "86400000"
+}

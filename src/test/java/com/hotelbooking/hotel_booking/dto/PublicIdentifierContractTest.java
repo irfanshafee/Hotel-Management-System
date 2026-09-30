@@ -4,36 +4,32 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
-import java.util.Set;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PublicIdentifierContractTest {
 
     @Test
-    void bookingResponseExposesReferenceInsteadOfInternalId() {
-        Set<String> fields = componentNames(BookingResponse.class);
+    void bookingResponseUsesUuidAsItsPublicId() {
+        Map<String, Class<?>> fields = components(BookingResponse.class);
 
-        assertTrue(fields.contains("bookingReference"));
-        assertFalse(fields.contains("bookingId"));
-        assertFalse(fields.contains("userId"));
+        assertEquals(UUID.class, fields.get("bookingId"));
     }
 
     @Test
-    void paymentResponseExposesReferencesInsteadOfInternalIds() {
-        Set<String> fields = componentNames(PaymentResponse.class);
+    void paymentResponseUsesUuidsAsItsPublicIds() {
+        Map<String, Class<?>> fields = components(PaymentResponse.class);
 
-        assertTrue(fields.contains("paymentReference"));
-        assertTrue(fields.contains("bookingReference"));
-        assertFalse(fields.contains("paymentId"));
-        assertFalse(fields.contains("bookingId"));
+        assertEquals(UUID.class, fields.get("paymentId"));
+        assertEquals(UUID.class, fields.get("bookingId"));
     }
 
-    private Set<String> componentNames(Class<?> recordType) {
+    private Map<String, Class<?>> components(Class<?> recordType) {
         return Arrays.stream(recordType.getRecordComponents())
-                .map(RecordComponent::getName)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toMap(
+                        RecordComponent::getName, RecordComponent::getType));
     }
 }

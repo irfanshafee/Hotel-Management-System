@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "payments", uniqueConstraints = @UniqueConstraint(
-        name = "uk_payments_payment_reference", columnNames = "payment_reference"))
+        name = "uk_payments_payment_uuid", columnNames = "payment_uuid"))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,9 +24,9 @@ public class Payment {
     private Long id;
 
     @Setter(AccessLevel.NONE)
-    @Column(name = "payment_reference", nullable = false, updatable = false,
+    @Column(name = "payment_uuid", nullable = false, updatable = false,
             columnDefinition = "uuid")
-    private UUID paymentReference = UUID.randomUUID();
+    private UUID paymentUuid = UUID.randomUUID();
 
     @OneToOne(optional = false)
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
@@ -57,7 +57,7 @@ public class Payment {
 
     @PrePersist
     void prepareForInsert() {
-        if (paymentReference == null) paymentReference = UUID.randomUUID();
+        if (paymentUuid == null) paymentUuid = UUID.randomUUID();
         if (createdAt == null) createdAt = LocalDateTime.now();
     }
 }

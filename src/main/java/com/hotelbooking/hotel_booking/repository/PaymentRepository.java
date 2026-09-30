@@ -10,8 +10,8 @@ import java.util.UUID;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByBookingId(Long bookingId);
 
-    Optional<Payment> findByPaymentReferenceAndBookingUserId(
-            UUID paymentReference, Long userId);
+    Optional<Payment> findByPaymentUuidAndBookingUserId(
+            UUID paymentUuid, Long userId);
 
     boolean existsByTransactionIdAndStatus(
             String transactionId, PaymentStatus status);

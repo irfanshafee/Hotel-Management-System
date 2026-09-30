@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record BookingResponse(
-        UUID bookingReference,
+        UUID bookingId,
         BookingStatus status,
         LocalDate checkIn,
         LocalDate checkOut,

@@ -11,7 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.ObjectMapper;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -32,12 +32,12 @@ class BookingControllerValidationTest {
 
     @Test
     void malformedUuidReturnsCleanBadRequest() throws Exception {
-        mockMvc.perform(post("/api/bookings/details")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"bookingReference\":\"not-a-uuid\"}"))
+        mockMvc.perform(get("/api/bookings/not-a-uuid")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.responseCode").value(400))
-                .andExpect(jsonPath("$.responseMessage").value("Malformed request body"))
+                .andExpect(jsonPath("$.responseMessage")
+                        .value("Invalid value for parameter: bookingId"))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
 }

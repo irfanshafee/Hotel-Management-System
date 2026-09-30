@@ -8,14 +8,7 @@ export const createBooking = (booking) =>
 
 export const getMyBookings = () => apiRequest('/api/bookings/my')
 
-export const getBooking = (bookingReference) =>
-  apiRequest('/api/bookings/details', {
-    method: 'POST',
-    body: JSON.stringify({ bookingReference }),
-  })
+export const getBooking = (bookingId) => apiRequest(`/api/bookings/${bookingId}`)
 
-export const cancelBooking = (bookingReference) =>
-  apiRequest('/api/bookings/cancel', {
-    method: 'PATCH',
-    body: JSON.stringify({ bookingReference }),
-  })
+export const cancelBooking = (bookingId) =>
+  apiRequest(`/api/bookings/${bookingId}/cancel`, { method: 'PATCH' })

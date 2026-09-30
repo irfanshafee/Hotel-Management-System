@@ -9,8 +9,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record PaymentResponse(
-        UUID paymentReference,
-        UUID bookingReference,
+        UUID paymentId,
+        UUID bookingId,
         String transactionId,
         BigDecimal amount,
         BigDecimal paidAmount,

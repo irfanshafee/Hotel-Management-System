@@ -40,8 +40,8 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResponse initiatePayment(UUID bookingReference) {
-        Booking booking = findOwnedBooking(bookingReference);
+    public PaymentResponse initiatePayment(UUID bookingUuid) {
+        Booking booking = findOwnedBooking(bookingUuid);
         Payment existingPayment = paymentRepository.findByBookingId(booking.getId()).orElse(null);
 
         if (existingPayment != null && existingPayment.getStatus() == PaymentStatus.PAID) {
@@ -72,9 +72,9 @@ public class PaymentService {
 
     @Transactional
     public PaymentSubmissionResult submitPayment(
-            UUID paymentReference, String transactionId) {
-        Payment payment = paymentRepository.findByPaymentReferenceAndBookingUserId(
-                        paymentReference, currentUserId())
+            UUID paymentUuid, String transactionId) {
+        Payment payment = paymentRepository.findByPaymentUuidAndBookingUserId(
+                        paymentUuid, currentUserId())
                 .orElseThrow(() -> new ApiException("payment.not.found"));
         Booking booking = payment.getBooking();
 
@@ -115,16 +115,16 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
-    public PaymentResponse getPaymentForBooking(UUID bookingReference) {
-        Booking booking = findOwnedBooking(bookingReference);
+    public PaymentResponse getPaymentForBooking(UUID bookingUuid) {
+        Booking booking = findOwnedBooking(bookingUuid);
         Payment payment = paymentRepository.findByBookingId(booking.getId())
                 .orElseThrow(() -> new ApiException("payment.not.found"));
         return toResponse(payment);
     }
 
-    private Booking findOwnedBooking(UUID bookingReference) {
-        return bookingRepository.findByBookingReferenceAndUserId(
-                        bookingReference, currentUserId())
+    private Booking findOwnedBooking(UUID bookingUuid) {
+        return bookingRepository.findByBookingUuidAndUserId(
+                        bookingUuid, currentUserId())
                 .orElseThrow(() -> new ApiException("booking.not.found"));
     }
 
@@ -148,8 +148,8 @@ public class PaymentService {
 
     private PaymentResponse toResponse(Payment payment) {
         return new PaymentResponse(
-                payment.getPaymentReference(),
-                payment.getBooking().getBookingReference(),
+                payment.getPaymentUuid(),
+                payment.getBooking().getBookingUuid(),
                 payment.getTransactionId(),
                 payment.getAmount(),
                 payment.getPaidAmount(),

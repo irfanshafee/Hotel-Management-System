@@ -17,14 +17,14 @@ export default function MyBookingsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const handleCancel = async (bookingReference) => {
+  const handleCancel = async (bookingId) => {
     if (!window.confirm('Cancel this booking? This action cannot be undone.')) return
-    setCancelling(bookingReference)
+    setCancelling(bookingId)
     setError('')
     try {
-      const updated = await cancelBooking(bookingReference)
+      const updated = await cancelBooking(bookingId)
       setBookings((current) => current.map((booking) => (
-        booking.bookingReference === bookingReference ? updated : booking
+        booking.bookingId === bookingId ? updated : booking
       )))
     } catch (requestError) {
       setError(requestError.message)
@@ -59,9 +59,9 @@ export default function MyBookingsPage() {
           {bookings.map((booking) => {
             const cancellable = ['PENDING', 'CONFIRMED'].includes(booking.status)
             return (
-              <article className="booking-card" key={booking.bookingReference}>
+              <article className="booking-card" key={booking.bookingId}>
                 <div className="booking-card__identity">
-                  <span className="booking-number">Booking reference: {booking.bookingReference}</span>
+                  <span className="booking-number">Booking ID: {booking.bookingId}</span>
                   <StatusBadge status={booking.status} />
                   <h2>{booking.hotelName}</h2>
                   <p>{booking.city} · Room {booking.roomNumber}</p>
@@ -74,18 +74,18 @@ export default function MyBookingsPage() {
                 </div>
                 <div className="booking-card__actions">
                   {booking.status === 'PENDING' && (
-                    <Link className="button button--primary" to={`/checkout/${booking.bookingReference}`}>
+                    <Link className="button button--primary" to={`/checkout/${booking.bookingId}`}>
                       Continue to Payment
                     </Link>
                   )}
                   {cancellable && (
                     <button
                       className="button button--danger-ghost"
-                      disabled={cancelling === booking.bookingReference}
-                      onClick={() => handleCancel(booking.bookingReference)}
+                      disabled={cancelling === booking.bookingId}
+                      onClick={() => handleCancel(booking.bookingId)}
                       type="button"
                     >
-                      {cancelling === booking.bookingReference ? 'Cancelling…' : 'Cancel Booking'}
+                      {cancelling === booking.bookingId ? 'Cancelling…' : 'Cancel Booking'}
                     </button>
                   )}
                 </div>

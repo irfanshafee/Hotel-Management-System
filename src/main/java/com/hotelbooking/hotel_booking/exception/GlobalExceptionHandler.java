@@ -2,6 +2,8 @@ package com.hotelbooking.hotel_booking.exception;
 
 import com.hotelbooking.hotel_booking.dto.ApiResponse;
 import jakarta.persistence.OptimisticLockException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,6 +21,8 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     private final ExceptionMessageCatalog messageCatalog;
 
     public GlobalExceptionHandler(ExceptionMessageCatalog messageCatalog) {
@@ -86,7 +90,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ApiResponse<Void>> handleUnexpectedException() {
+    ResponseEntity<ApiResponse<Void>> handleUnexpectedException(Exception exception) {
+        LOGGER.error("Unexpected exception while processing API request", exception);
         return response("internal.server.error");
     }
 

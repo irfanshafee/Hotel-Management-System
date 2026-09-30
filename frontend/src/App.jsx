@@ -21,7 +21,7 @@ export default function App() {
           <Route path="/hotels/:hotelId" element={<HotelDetailsPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/bookings" element={<MyBookingsPage />} />
-            <Route path="/checkout/:bookingReference" element={<CheckoutPage />} />
+            <Route path="/checkout/:bookingId" element={<CheckoutPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

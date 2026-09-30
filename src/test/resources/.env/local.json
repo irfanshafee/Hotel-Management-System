@@ -1,0 +1,8 @@
+{
+  "DB_URL": "jdbc:h2:mem:local_profile_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE",
+  "DB_USERNAME": "sa",
+  "DB_PASSWORD": "",
+  "JWT_SECRET": "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
+  "JSON_LOADER_TEST_VALUE": "loaded-from-local-json",
+  "JSON_LOADER_OVERRIDE_TEST": "json-value"
+}

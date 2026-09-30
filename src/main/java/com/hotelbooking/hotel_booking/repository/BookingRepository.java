@@ -18,8 +18,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByStatus(BookingStatus status);
 
-    Optional<Booking> findByBookingReferenceAndUserId(
-            UUID bookingReference, Long userId);
+    Optional<Booking> findByBookingUuidAndUserId(
+            UUID bookingUuid, Long userId);
 
     @Query("""
             select count(booking) from Booking booking

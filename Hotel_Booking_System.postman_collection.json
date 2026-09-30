@@ -23,11 +23,11 @@
       "value": "1"
     },
     {
-      "key": "bookingReference",
+      "key": "bookingId",
       "value": ""
     },
     {
-      "key": "paymentReference",
+      "key": "paymentId",
       "value": ""
     }
   ],
@@ -335,7 +335,7 @@
               }
             ],
             "url": "{{baseUrl}}/api/bookings",
-            "description": "Create a PENDING booking for the authenticated user. Saves data.bookingReference automatically.",
+            "description": "Create a PENDING booking. data.bookingId is a public UUID, not the database Long ID.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -363,8 +363,8 @@
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "if (response.data && response.data.bookingReference) {",
-                  "    pm.collectionVariables.set(\"bookingReference\", response.data.bookingReference);",
+                  "if (response.data && response.data.bookingId) {",
+                  "    pm.collectionVariables.set(\"bookingId\", response.data.bookingId);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -393,18 +393,12 @@
           "response": []
         },
         {
-          "name": "[POST] Get Booking Details",
+          "name": "[GET] Get Booking Details By UUID",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": "{{baseUrl}}/api/bookings/details",
-            "description": "Retrieve an owned booking by its public UUID reference.",
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings/{{bookingId}}",
+            "description": "Retrieve an owned booking using its public UUID.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -414,15 +408,6 @@
                   "type": "string"
                 }
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"bookingReference\": \"{{bookingReference}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "response": []
@@ -431,15 +416,9 @@
           "name": "[PATCH] Cancel Booking",
           "request": {
             "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": "{{baseUrl}}/api/bookings/cancel",
-            "description": "Cancel an owned booking using its public UUID reference.",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings/{{bookingId}}/cancel",
+            "description": "Cancel an owned booking using its public UUID.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -449,15 +428,6 @@
                   "type": "string"
                 }
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"bookingReference\": \"{{bookingReference}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
           "response": []
@@ -479,17 +449,8 @@
                 "type": "text"
               }
             ],
-            "url": "{{baseUrl}}/api/payments/initiate",
-            "description": "Create or retrieve the PENDING payment for an owned booking.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"bookingReference\": \"{{bookingReference}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "url": "{{baseUrl}}/api/payments/initiate/{{bookingId}}",
+            "description": "Create or retrieve the PENDING payment using the booking UUID."
           },
           "response": [],
           "event": [
@@ -498,8 +459,8 @@
               "script": {
                 "exec": [
                   "const response = pm.response.json();",
-                  "if (response.data && response.data.paymentReference) {",
-                  "    pm.collectionVariables.set(\"paymentReference\", response.data.paymentReference);",
+                  "if (response.data && response.data.paymentId) {",
+                  "    pm.collectionVariables.set(\"paymentId\", response.data.paymentId);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -518,11 +479,11 @@
                 "type": "text"
               }
             ],
-            "url": "{{baseUrl}}/api/payments/submit",
-            "description": "Submit a dummy transaction ID using the public payment reference.",
+            "url": "{{baseUrl}}/api/payments/{{paymentId}}/submit",
+            "description": "Submit a dummy transaction ID using the public payment UUID.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"paymentReference\": \"{{paymentReference}}\",\n  \"transactionId\": \"S 6789ABcd\"\n}",
+              "raw": "{\n  \"transactionId\": \"S 6789ABcd\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -533,27 +494,12 @@
           "response": []
         },
         {
-          "name": "[POST] Get Payment For Booking",
+          "name": "[GET] Get Payment For Booking UUID",
           "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": "{{baseUrl}}/api/payments/booking",
-            "description": "Retrieve payment data for an owned booking reference.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"bookingReference\": \"{{bookingReference}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/payments/booking/{{bookingId}}",
+            "description": "Retrieve payment data using the owned booking UUID."
           },
           "response": []
         }

@@ -1,0 +1,2 @@
+org.springframework.boot.EnvironmentPostProcessor=\
+com.hotelbooking.hotel_booking.config.JsonEnvironmentPostProcessor

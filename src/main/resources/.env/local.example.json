@@ -1,0 +1,7 @@
+{
+  "DB_URL": "jdbc:postgresql://localhost:5432/hotel_booking",
+  "DB_USERNAME": "replace-with-local-database-user",
+  "DB_PASSWORD": "replace-with-local-database-password",
+  "JWT_SECRET": "replace-with-base64-encoded-secret-of-at-least-32-bytes",
+  "JWT_EXPIRATION": "86400000"
+}
