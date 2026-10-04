@@ -13,3 +13,5 @@ export const register = (details) =>
   })
 
 export const getCurrentUser = () => apiRequest('/api/user/me')
+export const forgotPassword = (email) => apiRequest('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) })
+export const resetPassword = (token, newPassword) => apiRequest('/api/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, newPassword }) })

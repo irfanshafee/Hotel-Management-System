@@ -44,6 +44,9 @@ management:
       show-details: never
 
 app:
+  password-reset:
+    # Production sends only when Railway sets PASSWORD_RESET_DELIVERY=resend.
+    delivery: ${PASSWORD_RESET_DELIVERY:noop}
   cors:
     # Required on Railway; specify one or more comma-separated HTTPS frontend origins.
     allowed-origins: ${CORS_ALLOWED_ORIGINS}

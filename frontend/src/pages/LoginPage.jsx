@@ -56,6 +56,7 @@ export default function LoginPage() {
               onChange={(event) => setForm({ ...form, password: event.target.value })}
             />
           </label>
+          <Link className="forgot-link" to="/forgot-password">Forgot password?</Link>
           <button className="button button--primary button--block" disabled={submitting} type="submit">
             {submitting ? 'Logging in…' : 'Log In'}
           </button>

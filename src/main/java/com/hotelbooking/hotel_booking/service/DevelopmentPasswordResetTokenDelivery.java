@@ -4,10 +4,12 @@ import com.hotelbooking.hotel_booking.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Service
 @Profile("local")
+@ConditionalOnProperty(name = "app.password-reset.delivery", havingValue = "console", matchIfMissing = true)
 class DevelopmentPasswordResetTokenDelivery implements PasswordResetTokenDelivery {
     private static final Logger LOGGER = LoggerFactory.getLogger(DevelopmentPasswordResetTokenDelivery.class);
 
