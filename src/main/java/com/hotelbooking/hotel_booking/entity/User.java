@@ -38,11 +38,19 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "failed_login_attempts", nullable = false,
+            columnDefinition = "integer default 0")
+    private Integer failedLoginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
     @OneToMany(mappedBy = "user")
     private List<Booking> bookings = new ArrayList<>();
 
     @PrePersist
     void setCreationTime() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+        if (failedLoginAttempts == null) failedLoginAttempts = 0;
     }
 }

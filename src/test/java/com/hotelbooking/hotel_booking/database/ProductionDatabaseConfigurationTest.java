@@ -78,6 +78,23 @@ class ProductionDatabaseConfigurationTest {
         assertTrue(sql.contains("ON CONFLICT (id) DO NOTHING"));
     }
 
+    @Test
+    void failedLoginProtectionMigrationIsNonDestructiveAndTargetsProductionUsers()
+            throws IOException {
+        String sql = resourceText(
+                "db/migration/V3__add_failed_login_protection.sql");
+        String executableSql = sql.replaceAll("(?m)--.*$", " ")
+                .toLowerCase();
+
+        assertFalse(executableSql.matches("(?s).*\\bdrop\\b.*"));
+        assertFalse(executableSql.matches("(?s).*\\btruncate\\b.*"));
+        assertFalse(executableSql.matches("(?s).*\\bdelete\\s+from\\b.*"));
+        assertTrue(sql.contains("ALTER TABLE \"Production\".users"));
+        assertTrue(sql.contains("failed_login_attempts"));
+        assertTrue(sql.contains("locked_until"));
+        assertTrue(sql.contains("SET failed_login_attempts = 0"));
+    }
+
     private PropertySource<?> loadYaml(String resource) throws IOException {
         List<PropertySource<?>> sources = new YamlPropertySourceLoader()
                 .load(resource, new ClassPathResource(resource));

@@ -7,6 +7,10 @@
     "status": 401,
     "message": "Invalid email or password"
   },
+  "account.locked": {
+    "status": 423,
+    "message": "Account temporarily locked. Please try again later."
+  },
   "hotel.not.found": {
     "status": 404,
     "message": "Hotel not found with id: {0}"
