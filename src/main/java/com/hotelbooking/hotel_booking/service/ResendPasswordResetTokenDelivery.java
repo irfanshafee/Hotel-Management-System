@@ -4,6 +4,8 @@ import com.hotelbooking.hotel_booking.entity.User;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -15,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 @Service
 @ConditionalOnProperty(name = "app.password-reset.delivery", havingValue = "resend")
 class ResendPasswordResetTokenDelivery implements PasswordResetTokenDelivery {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResendPasswordResetTokenDelivery.class);
     private final String apiKey, mailFrom, frontendBaseUrl;
     private final HttpClient client = HttpClient.newHttpClient();
 
@@ -35,7 +38,10 @@ class ResendPasswordResetTokenDelivery implements PasswordResetTokenDelivery {
             HttpResponse<Void> response = client.send(HttpRequest.newBuilder(URI.create("https://api.resend.com/emails"))
                     .header("Authorization", "Bearer " + apiKey).header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.discarding());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) throw new IllegalStateException("Password reset email delivery failed");
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                LOGGER.error("Resend password reset delivery failed with HTTP status {}", response.statusCode());
+                throw new IllegalStateException("Password reset email delivery failed");
+            }
         } catch (Exception exception) { throw new IllegalStateException("Password reset email delivery failed", exception); }
     }
     private String escape(String value) { return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n"); }

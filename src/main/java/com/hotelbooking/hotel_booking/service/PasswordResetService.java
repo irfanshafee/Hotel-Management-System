@@ -10,6 +10,8 @@ import com.hotelbooking.hotel_booking.repository.PasswordResetTokenRepository;
 import com.hotelbooking.hotel_booking.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -21,6 +23,7 @@ import java.util.Locale;
 
 @Service
 public class PasswordResetService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PasswordResetService.class);
     private static final int TOKEN_BYTES = 32;
     private static final int TOKEN_EXPIRATION_MINUTES = 30;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
@@ -50,7 +53,14 @@ public class PasswordResetService {
         token.setTokenHash(hashToken(rawToken));
         token.setExpiresAt(now.plusMinutes(TOKEN_EXPIRATION_MINUTES));
         tokenRepository.save(token);
-        tokenDelivery.deliver(user, rawToken);
+        try {
+            tokenDelivery.deliver(user, rawToken);
+        } catch (RuntimeException exception) {
+            // Keep the public response generic and ensure an undelivered link cannot be used.
+            token.setUsedAt(now);
+            tokenRepository.save(token);
+            LOGGER.error("Password reset delivery failed for an existing account", exception);
+        }
     }
 
     @Transactional
