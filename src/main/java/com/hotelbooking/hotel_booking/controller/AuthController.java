@@ -3,9 +3,12 @@ package com.hotelbooking.hotel_booking.controller;
 import com.hotelbooking.hotel_booking.dto.AuthResponse;
 import com.hotelbooking.hotel_booking.dto.ApiResponse;
 import com.hotelbooking.hotel_booking.dto.LoginRequest;
+import com.hotelbooking.hotel_booking.dto.ForgotPasswordRequest;
 import com.hotelbooking.hotel_booking.dto.RegisterRequest;
+import com.hotelbooking.hotel_booking.dto.ResetPasswordRequest;
 import com.hotelbooking.hotel_booking.service.ApiSuccessMessageCatalog;
 import com.hotelbooking.hotel_booking.service.AuthService;
+import com.hotelbooking.hotel_booking.service.PasswordResetService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +22,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
     private final AuthService authService;
     private final ApiSuccessMessageCatalog successMessages;
+    private final PasswordResetService passwordResetService;
 
-    public AuthController(AuthService authService, ApiSuccessMessageCatalog successMessages) {
+    public AuthController(AuthService authService, ApiSuccessMessageCatalog successMessages,
+                          PasswordResetService passwordResetService) {
         this.authService = authService;
         this.successMessages = successMessages;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/register")
@@ -38,5 +44,19 @@ public class AuthController {
     ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("auth.login"),
                 authService.login(request));
+    }
+
+    @PostMapping("/forgot-password")
+    ApiResponse<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.requestReset(request);
+        return new ApiResponse<>(HttpStatus.OK.value(),
+                successMessages.get("auth.password-reset.requested"), null);
+    }
+
+    @PostMapping("/reset-password")
+    ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
+        return new ApiResponse<>(HttpStatus.OK.value(),
+                successMessages.get("auth.password-reset.successful"), null);
     }
 }

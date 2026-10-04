@@ -1,6 +1,8 @@
 {
   "auth.registered": "User registered successfully",
   "auth.login": "Login successful",
+  "auth.password-reset.requested": "If an account exists for this email, a password reset link has been generated.",
+  "auth.password-reset.successful": "Password reset successfully.",
   "booking.created": "Booking created successfully",
   "bookings.retrieved": "Bookings retrieved successfully",
   "booking.retrieved": "Booking retrieved successfully",

@@ -11,6 +11,10 @@
     "status": 423,
     "message": "Account temporarily locked. Please try again later."
   },
+  "password-reset.token.invalid": {
+    "status": 400,
+    "message": "Invalid or expired password reset token."
+  },
   "hotel.not.found": {
     "status": 404,
     "message": "Hotel not found with id: {0}"
