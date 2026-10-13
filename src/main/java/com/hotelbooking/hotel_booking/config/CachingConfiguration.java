@@ -112,7 +112,7 @@ public class CachingConfiguration implements CachingConfigurer {
         @Bean
         LettuceConnectionFactory redisConnectionFactory(
                 @Value("${" + REDIS_URL_PROPERTY + "}") String url) {
-            return lettuceConnectionFactory(RedisURI.create(url));
+            return lettuceConnectionFactory(parseRedisUrl(url));
         }
 
         @Bean
@@ -141,11 +141,40 @@ public class CachingConfiguration implements CachingConfigurer {
                 LettuceConnectionFactory.createRedisConfiguration(uri), clientConfiguration);
     }
 
+    /**
+     * Parses a redis:// or rediss:// URL, or returns null when it is blank or
+     * malformed. Redis is optional, so a bad URL must never stop startup.
+     */
+    static RedisURI parseRedisUrl(String url) {
+        if (!StringUtils.hasText(url)) {
+            return null;
+        }
+        String trimmed = url.trim();
+        String lower = trimmed.toLowerCase(java.util.Locale.ROOT);
+        if (!lower.startsWith("redis://") && !lower.startsWith("rediss://")) {
+            return null;
+        }
+        try {
+            RedisURI uri = RedisURI.create(trimmed);
+            return StringUtils.hasText(uri.getHost()) ? uri : null;
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     @Configuration(proxyBeanMethods = false)
     @Conditional(RedisUrlMissing.class)
     static class InMemoryCacheBackend {
+        private static final Logger log = LoggerFactory.getLogger(InMemoryCacheBackend.class);
+
         @Bean
-        CacheManager cacheManager() {
+        CacheManager cacheManager(@Value("${" + REDIS_URL_PROPERTY + ":}") String url) {
+            if (StringUtils.hasText(url)) {
+                // Never log the URL or the parse error: both contain the password.
+                log.error("REDIS_URL is set but is not a valid redis:// or rediss:// URL "
+                        + "(expected rediss://default:<password>@<host>:6379); "
+                        + "using the in-memory cache instead");
+            }
             ConcurrentMapCacheManager cacheManager =
                     new ConcurrentMapCacheManager(APP_SETTINGS_CACHE);
             cacheManager.setAllowNullValues(false);
@@ -156,14 +185,14 @@ public class CachingConfiguration implements CachingConfigurer {
     static class RedisUrlConfigured implements Condition {
         @Override
         public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
-            return StringUtils.hasText(context.getEnvironment().getProperty(REDIS_URL_PROPERTY));
+            return parseRedisUrl(context.getEnvironment().getProperty(REDIS_URL_PROPERTY)) != null;
         }
     }
 
     static class RedisUrlMissing implements Condition {
         @Override
         public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
-            return !StringUtils.hasText(context.getEnvironment().getProperty(REDIS_URL_PROPERTY));
+            return parseRedisUrl(context.getEnvironment().getProperty(REDIS_URL_PROPERTY)) == null;
         }
     }
 

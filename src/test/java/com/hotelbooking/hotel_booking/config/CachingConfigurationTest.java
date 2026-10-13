@@ -4,6 +4,8 @@ import com.hotelbooking.hotel_booking.entity.SignupOtpConfiguration;
 import com.hotelbooking.hotel_booking.repository.SignupOtpConfigurationRepository;
 import com.hotelbooking.hotel_booking.service.SignupOtpConfigurationService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
@@ -55,6 +57,34 @@ class CachingConfigurationTest {
             service.getOtpValidity();
             verify(repository, times(2)).findById(CONFIGURATION_ID);
         });
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "rediss:/default:fake-token@example.upstash.io:6379",
+            "\"rediss://default:fake-token@example.upstash.io:6379\"",
+            "redis-cli --tls -u rediss://default:fake-token@example.upstash.io:6379",
+            "https://example.upstash.io",
+            "not a url"})
+    void malformedRedisUrlFallsBackToInMemoryCacheInsteadOfFailingStartup(String url) {
+        runner().withPropertyValues("spring.data.redis.url=" + url).run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean(CacheManager.class))
+                    .isInstanceOf(ConcurrentMapCacheManager.class);
+            assertThat(context.getBean(SignupOtpConfigurationService.class).getOtpValidity())
+                    .isEqualTo(Duration.ofMinutes(7));
+        });
+    }
+
+    @Test
+    void wellFormedUpstashUrlSelectsRedis() {
+        assertThat(CachingConfiguration.parseRedisUrl(
+                "rediss://default:fake-token@example.upstash.io:6379"))
+                .isNotNull()
+                .satisfies(uri -> {
+                    assertThat(uri.getHost()).isEqualTo("example.upstash.io");
+                    assertThat(uri.isSsl()).isTrue();
+                });
     }
 
     @Test
