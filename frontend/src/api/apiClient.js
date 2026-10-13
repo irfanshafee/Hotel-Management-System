@@ -1,5 +1,7 @@
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080')
   .replace(/\/$/, '')
+const TRANSPORT_API_BASE_URL = (import.meta.env.VITE_TRANSPORT_API_BASE_URL || 'http://localhost:8081')
+  .replace(/\/$/, '')
 
 const TOKEN_KEY = 'hotelBookingToken'
 
@@ -25,7 +27,7 @@ export function removeStoredToken() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
-export async function apiRequest(path, options = {}) {
+async function request(baseUrl, path, options = {}) {
   const token = getStoredToken()
   const headers = new Headers(options.headers)
 
@@ -38,7 +40,7 @@ export async function apiRequest(path, options = {}) {
 
   let response
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers })
+    response = await fetch(`${baseUrl}${path}`, { ...options, headers })
   } catch {
     throw new ApiError('Unable to connect to the server. Please try again.', 0)
   }
@@ -68,3 +70,7 @@ export async function apiRequest(path, options = {}) {
 
   return payload?.data
 }
+
+export const apiRequest = (path, options = {}) => request(API_BASE_URL, path, options)
+export const transportApiRequest = (path, options = {}) =>
+  request(TRANSPORT_API_BASE_URL, path, options)

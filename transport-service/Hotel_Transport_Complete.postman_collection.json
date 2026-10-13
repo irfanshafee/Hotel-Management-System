@@ -1,0 +1,252 @@
+{
+  "info": {
+    "name": "Hotel + Transport Service (Complete)",
+    "description": "Import this single collection into Postman. Run Hotel Service on port 8080 and Transport Service on port 8081. Set adminEmail/adminPassword and userEmail/userPassword, then run requests in numbered order.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "hotelBaseUrl", "value": "http://localhost:8080" },
+    { "key": "transportBaseUrl", "value": "http://localhost:8081" },
+    { "key": "adminEmail", "value": "CHANGE_TO_ADMIN_EMAIL" },
+    { "key": "adminPassword", "value": "CHANGE_TO_ADMIN_PASSWORD" },
+    { "key": "userEmail", "value": "CHANGE_TO_USER_EMAIL" },
+    { "key": "userPassword", "value": "CHANGE_TO_USER_PASSWORD" },
+    { "key": "adminToken", "value": "" },
+    { "key": "userToken", "value": "" },
+    { "key": "driverId", "value": "1" },
+    { "key": "vehicleId", "value": "1" },
+    { "key": "routeId", "value": "1" },
+    { "key": "tripId", "value": "1" },
+    { "key": "seatId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "1 - Authentication",
+      "item": [
+        {
+          "name": "Login as ADMIN (saves adminToken)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Admin login succeeded', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "if (json.data && json.data.token) pm.collectionVariables.set('adminToken', json.data.token);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}" },
+            "url": "{{hotelBaseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Login as USER (saves userToken)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('User login succeeded', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "if (json.data && json.data.token) pm.collectionVariables.set('userToken', json.data.token);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}" },
+            "url": "{{hotelBaseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Verify current USER through Transport Service",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "url": "{{transportBaseUrl}}/api/users/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - Admin - Drivers",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create driver (saves driverId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Driver created', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json(); if (json.data) pm.collectionVariables.set('driverId', json.data.id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman Driver\",\n  \"phoneNumber\": \"017{{$randomInt}}\",\n  \"nidNumber\": \"NID-{{$timestamp}}\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/drivers"
+          }
+        },
+        { "name": "List drivers", "request": { "method": "GET", "url": "{{transportBaseUrl}}/api/admin/drivers" } },
+        {
+          "name": "Update driver",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman Driver Updated\",\n  \"phoneNumber\": \"01700000000\",\n  \"nidNumber\": \"NID-UPDATED-{{$timestamp}}\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/drivers/{{driverId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 - Admin - Vehicles",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create vehicle + seats (saves vehicleId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Vehicle created', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json(); if (json.data) pm.collectionVariables.set('vehicleId', json.data.id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"busNumber\": \"POSTMAN-{{$timestamp}}\",\n  \"name\": \"Volvo AC\",\n  \"totalSeats\": 40\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/vehicles"
+          }
+        },
+        { "name": "List vehicles", "request": { "method": "GET", "url": "{{transportBaseUrl}}/api/admin/vehicles" } },
+        {
+          "name": "Update vehicle",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Volvo AC Updated\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/vehicles/{{vehicleId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 - Admin - Routes",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create route (saves routeId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Route created', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json(); if (json.data) pm.collectionVariables.set('routeId', json.data.id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"Dhaka\",\n  \"destination\": \"Sylhet\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/routes"
+          }
+        },
+        { "name": "List routes", "request": { "method": "GET", "url": "{{transportBaseUrl}}/api/admin/routes" } },
+        {
+          "name": "Update route",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"Dhaka\",\n  \"destination\": \"Sylhet City\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/routes/{{routeId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5 - Admin - Trips",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create trip (saves tripId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Trip created', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json(); if (json.data) pm.collectionVariables.set('tripId', json.data.id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"vehicleId\": {{vehicleId}},\n  \"routeId\": {{routeId}},\n  \"driverId\": {{driverId}},\n  \"departureTime\": \"2027-12-10T08:00:00+06:00\",\n  \"arrivalTime\": \"2027-12-10T14:00:00+06:00\",\n  \"fare\": 1500.00,\n  \"status\": \"SCHEDULED\"\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/trips"
+          }
+        },
+        { "name": "List trips", "request": { "method": "GET", "url": "{{transportBaseUrl}}/api/admin/trips" } },
+        {
+          "name": "Update trip",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"vehicleId\": {{vehicleId}},\n  \"routeId\": {{routeId}},\n  \"driverId\": {{driverId}},\n  \"departureTime\": \"2027-12-10T09:00:00+06:00\",\n  \"arrivalTime\": \"2027-12-10T15:00:00+06:00\",\n  \"fare\": 1600.00,\n  \"status\": \"SCHEDULED\"\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/trips/{{tripId}}"
+          }
+        },
+        { "name": "Cancel trip (run only before booking)", "request": { "method": "PATCH", "url": "{{transportBaseUrl}}/api/admin/trips/{{tripId}}/cancel" } }
+      ]
+    },
+    {
+      "name": "6 - Public - Browse Trips",
+      "item": [
+        {
+          "name": "Search trips",
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{transportBaseUrl}}/api/trips?origin=Dhaka&destination=Sylhet%20City&date=2027-12-10" }
+        },
+        {
+          "name": "Get seats (saves first available seatId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Seats returned', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json(); const seat = json.data && json.data.seats && json.data.seats.find(s => s.available);",
+            "if (seat) pm.collectionVariables.set('seatId', seat.seatId);"
+          ] } }],
+          "request": { "method": "GET", "auth": { "type": "noauth" }, "url": "{{transportBaseUrl}}/api/trips/{{tripId}}/seats" }
+        }
+      ]
+    },
+    {
+      "name": "7 - User - Booking",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Book selected seat",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"tripId\": {{tripId}},\n  \"seatIds\": [{{seatId}}]\n}" },
+            "url": "{{transportBaseUrl}}/api/bookings"
+          }
+        },
+        { "name": "Get my bookings", "request": { "method": "GET", "url": "{{transportBaseUrl}}/api/bookings/my" } }
+      ]
+    },
+    {
+      "name": "8 - Security and Conflict Checks",
+      "item": [
+        {
+          "name": "USER cannot access admin API (expects 403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Forbidden', () => pm.response.to.have.status(403));"] } }],
+          "request": {
+            "method": "GET",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "url": "{{transportBaseUrl}}/api/admin/drivers"
+          }
+        },
+        {
+          "name": "Double-book same seat (expects 409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Conflict', () => pm.response.to.have.status(409));"] } }],
+          "request": {
+            "method": "POST",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"tripId\": {{tripId}},\n  \"seatIds\": [{{seatId}}]\n}" },
+            "url": "{{transportBaseUrl}}/api/bookings"
+          }
+        },
+        {
+          "name": "Cancel booked trip (expects 409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Conflict', () => pm.response.to.have.status(409));"] } }],
+          "request": {
+            "method": "PATCH",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "url": "{{transportBaseUrl}}/api/admin/trips/{{tripId}}/cancel"
+          }
+        }
+      ]
+    }
+  ]
+}

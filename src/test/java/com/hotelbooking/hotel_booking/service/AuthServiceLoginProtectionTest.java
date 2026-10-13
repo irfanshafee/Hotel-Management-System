@@ -80,8 +80,8 @@ class AuthServiceLoginProtectionTest {
 
         assertEquals("account.locked", exception.getMessageKey());
         assertEquals(5, user.getFailedLoginAttempts());
-        assertTrue(user.getLockedUntil().isAfter(beforeAttempt.plusMinutes(14)));
-        assertTrue(user.getLockedUntil().isBefore(beforeAttempt.plusMinutes(16)));
+        assertTrue(user.getLockedUntil().isAfter(beforeAttempt.plusSeconds(50)));
+        assertTrue(user.getLockedUntil().isBefore(beforeAttempt.plusSeconds(70)));
         verify(userRepository).save(user);
     }
 

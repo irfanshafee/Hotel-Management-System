@@ -1,0 +1,4 @@
+app:
+  password-reset:
+    # Tests never contact Resend; this activates the existing non-production no-op delivery.
+    delivery: noop

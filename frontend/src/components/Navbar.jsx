@@ -26,6 +26,7 @@ export default function Navbar() {
         <nav className="navbar__links" aria-label="Primary navigation">
           <NavLink to="/" end>Hotels</NavLink>
           {isAuthenticated && <NavLink to="/bookings">My Bookings</NavLink>}
+          <NavLink to="/transport">Transport</NavLink>
         </nav>
 
         <div className="navbar__auth">
@@ -49,6 +50,7 @@ export default function Navbar() {
               {open && (
                 <div className="user-menu__dropdown">
                   <Link to="/bookings" onClick={() => setOpen(false)}>My Bookings</Link>
+                  <Link to="/transport/bookings" onClick={() => setOpen(false)}>Transport Bookings</Link>
                   <button type="button" onClick={logout}>Logout</button>
                 </div>
               )}

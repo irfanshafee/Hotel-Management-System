@@ -35,13 +35,15 @@ class ProductionDatabaseConfigurationTest {
     }
 
     @Test
-    void localKeepsUpdateAndDoesNotRunProductionMigrations()
+    void localUsesProductionSchemaWithoutHibernateDdlOrMigrations()
             throws IOException {
         PropertySource<?> local = loadYaml("application-local.yml");
 
-        assertEquals("update",
+        assertEquals("none",
                 local.getProperty("spring.jpa.hibernate.ddl-auto"));
         assertEquals(false, local.getProperty("spring.flyway.enabled"));
+        assertEquals("\"Production\"",
+                local.getProperty("spring.jpa.properties.hibernate.default_schema"));
     }
 
     @Test

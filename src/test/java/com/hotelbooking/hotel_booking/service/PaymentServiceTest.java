@@ -2,6 +2,7 @@ package com.hotelbooking.hotel_booking.service;
 
 import com.hotelbooking.hotel_booking.dto.PaymentSubmissionResult;
 import com.hotelbooking.hotel_booking.entity.Booking;
+import com.hotelbooking.hotel_booking.entity.Hotel;
 import com.hotelbooking.hotel_booking.entity.Payment;
 import com.hotelbooking.hotel_booking.entity.Room;
 import com.hotelbooking.hotel_booking.entity.User;
@@ -14,6 +15,7 @@ import com.hotelbooking.hotel_booking.security.AuthenticatedUser;
 import com.hotelbooking.hotel_booking.security.AuthenticatedUserContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,6 +39,7 @@ class PaymentServiceTest {
     private BookingRepository bookingRepository;
     private PaymentProcessor paymentProcessor;
     private AuthenticatedUserContext authenticatedUserContext;
+    private ApplicationEventPublisher eventPublisher;
     private PaymentService paymentService;
 
     @BeforeEach
@@ -44,8 +48,9 @@ class PaymentServiceTest {
         bookingRepository = mock(BookingRepository.class);
         paymentProcessor = mock(PaymentProcessor.class);
         authenticatedUserContext = mock(AuthenticatedUserContext.class);
+        eventPublisher = mock(ApplicationEventPublisher.class);
         paymentService = new PaymentService(
-                paymentRepository, bookingRepository, paymentProcessor, authenticatedUserContext);
+                paymentRepository, bookingRepository, paymentProcessor, authenticatedUserContext, eventPublisher);
         useAuthenticatedUser(1L);
     }
 
@@ -93,6 +98,14 @@ class PaymentServiceTest {
         assertEquals("S 6789ABcd", payment.getTransactionId());
         verify(paymentRepository).save(payment);
         verify(bookingRepository).save(payment.getBooking());
+        var event = org.mockito.ArgumentCaptor.forClass(
+                com.hotelbooking.hotel_booking.event.BookingConfirmedEvent.class);
+        verify(eventPublisher).publishEvent(event.capture());
+        assertEquals("test@example.com", event.getValue().emailData().recipientEmail());
+        assertEquals("Grand Test Hotel", event.getValue().emailData().hotelName());
+        assertEquals("101", event.getValue().emailData().roomNumber());
+        assertEquals(5, event.getValue().emailData().numberOfNights());
+        assertEquals(new BigDecimal("15000.00"), event.getValue().emailData().totalAmount());
     }
 
     @Test
@@ -114,6 +127,7 @@ class PaymentServiceTest {
         assertEquals("ABC123", payment.getTransactionId());
         verify(paymentRepository).save(payment);
         verify(bookingRepository).save(payment.getBooking());
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -135,6 +149,7 @@ class PaymentServiceTest {
         assertEquals(BookingStatus.PENDING, payment.getBooking().getStatus());
         verify(paymentRepository, never()).save(any());
         verify(bookingRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -182,10 +197,20 @@ class PaymentServiceTest {
     private Booking pendingBooking() {
         User user = new User();
         user.setId(1L);
+        user.setName("Test User");
+        user.setEmail("test@example.com");
 
         Room room = new Room();
         room.setId(3L);
         room.setPrice(new BigDecimal("3000.00"));
+        room.setRoomNumber("101");
+        room.setCategory(com.hotelbooking.hotel_booking.enums.RoomCategory.DELUXE);
+        room.setCapacity(2);
+        Hotel hotel = new Hotel();
+        hotel.setName("Grand Test Hotel");
+        hotel.setCity("Dhaka");
+        hotel.setAddress("1 Test Road");
+        room.setHotel(hotel);
 
         Booking booking = new Booking();
         booking.setId(25L);

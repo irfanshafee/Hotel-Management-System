@@ -10,6 +10,9 @@ import NotFoundPage from './pages/NotFoundPage'
 import SignupPage from './pages/SignupPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import TransportPage from './pages/TransportPage'
+import TransportBookingsPage from './pages/TransportBookingsPage'
+import TransportCheckoutPage from './pages/TransportCheckoutPage'
 
 export default function App() {
   return (
@@ -23,9 +26,12 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/hotels/:hotelId" element={<HotelDetailsPage />} />
+          <Route path="/transport" element={<TransportPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/bookings" element={<MyBookingsPage />} />
             <Route path="/checkout/:bookingId" element={<CheckoutPage />} />
+            <Route path="/transport/bookings" element={<TransportBookingsPage />} />
+            <Route path="/transport/checkout/:bookingId" element={<TransportCheckoutPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

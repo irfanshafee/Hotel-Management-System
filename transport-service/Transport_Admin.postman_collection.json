@@ -1,0 +1,96 @@
+{
+  "info": {
+    "name": "Transport Service - Admin API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "transportBaseUrl", "value": "http://localhost:8081" },
+    { "key": "adminToken", "value": "PASTE_ADMIN_JWT_HERE" },
+    { "key": "vehicleId", "value": "1" },
+    { "key": "routeId", "value": "1" },
+    { "key": "driverId", "value": "1" },
+    { "key": "tripId", "value": "1" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Drivers",
+      "item": [
+        {
+          "name": "List drivers",
+          "request": { "method": "GET", "url": "{{transportBaseUrl}}/api/admin/drivers" }
+        },
+        {
+          "name": "Create driver",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Rahim Uddin\",\n  \"phoneNumber\": \"01700000000\",\n  \"nidNumber\": \"1990123456789\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/drivers"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vehicles",
+      "item": [
+        {
+          "name": "List vehicles",
+          "request": { "method": "GET", "url": "{{transportBaseUrl}}/api/admin/vehicles" }
+        },
+        {
+          "name": "Create vehicle and seats",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"busNumber\": \"DHAKA-METRO-B-9001\",\n  \"name\": \"Volvo AC\",\n  \"totalSeats\": 40\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/vehicles"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Routes",
+      "item": [
+        {
+          "name": "List routes",
+          "request": { "method": "GET", "url": "{{transportBaseUrl}}/api/admin/routes" }
+        },
+        {
+          "name": "Create route",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"origin\": \"Dhaka\",\n  \"destination\": \"Sylhet\",\n  \"status\": \"ACTIVE\"\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/routes"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trips",
+      "item": [
+        {
+          "name": "List trips",
+          "request": { "method": "GET", "url": "{{transportBaseUrl}}/api/admin/trips" }
+        },
+        {
+          "name": "Create trip",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"vehicleId\": {{vehicleId}},\n  \"routeId\": {{routeId}},\n  \"driverId\": {{driverId}},\n  \"departureTime\": \"2027-01-10T08:00:00+06:00\",\n  \"arrivalTime\": \"2027-01-10T14:00:00+06:00\",\n  \"fare\": 1500.00,\n  \"status\": \"SCHEDULED\"\n}" },
+            "url": "{{transportBaseUrl}}/api/admin/trips"
+          }
+        },
+        {
+          "name": "Cancel trip",
+          "request": { "method": "PATCH", "url": "{{transportBaseUrl}}/api/admin/trips/{{tripId}}/cancel" }
+        }
+      ]
+    }
+  ]
+}

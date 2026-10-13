@@ -5,6 +5,14 @@
   },
   {
     "method": "POST",
+    "path": "/api/auth/verify-signup"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/resend-signup-otp"
+  },
+  {
+    "method": "POST",
     "path": "/api/auth/login"
   },
   {

@@ -1,9 +1,11 @@
 package com.hotelbooking.hotel_booking.service;
 
+import com.hotelbooking.hotel_booking.dto.BookingConfirmationEmailData;
 import com.hotelbooking.hotel_booking.dto.PaymentResponse;
 import com.hotelbooking.hotel_booking.dto.PaymentSubmissionResult;
 import com.hotelbooking.hotel_booking.entity.Booking;
 import com.hotelbooking.hotel_booking.entity.Payment;
+import com.hotelbooking.hotel_booking.event.BookingConfirmedEvent;
 import com.hotelbooking.hotel_booking.enums.BookingStatus;
 import com.hotelbooking.hotel_booking.enums.PaymentMethod;
 import com.hotelbooking.hotel_booking.enums.PaymentStatus;
@@ -12,6 +14,7 @@ import com.hotelbooking.hotel_booking.repository.BookingRepository;
 import com.hotelbooking.hotel_booking.repository.PaymentRepository;
 import com.hotelbooking.hotel_booking.security.AuthenticatedUserContext;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -27,16 +30,19 @@ public class PaymentService {
     private final BookingRepository bookingRepository;
     private final PaymentProcessor paymentProcessor;
     private final AuthenticatedUserContext authenticatedUserContext;
+    private final ApplicationEventPublisher eventPublisher;
 
     public PaymentService(
             PaymentRepository paymentRepository,
             BookingRepository bookingRepository,
             PaymentProcessor paymentProcessor,
-            AuthenticatedUserContext authenticatedUserContext) {
+            AuthenticatedUserContext authenticatedUserContext,
+            ApplicationEventPublisher eventPublisher) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.paymentProcessor = paymentProcessor;
         this.authenticatedUserContext = authenticatedUserContext;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -111,6 +117,7 @@ public class PaymentService {
 
         paymentRepository.save(payment);
         bookingRepository.save(booking);
+        eventPublisher.publishEvent(new BookingConfirmedEvent(toConfirmationEmailData(payment)));
         return new PaymentSubmissionResult(true, toResponse(payment));
     }
 
@@ -158,5 +165,18 @@ public class PaymentService {
                 payment.getStatus(),
                 payment.getBooking().getStatus(),
                 payment.getCreatedAt());
+    }
+
+    private BookingConfirmationEmailData toConfirmationEmailData(Payment payment) {
+        Booking booking = payment.getBooking();
+        long nights = ChronoUnit.DAYS.between(booking.getStartDate(), booking.getEndDate());
+        var room = booking.getRoom();
+        var hotel = room.getHotel();
+        var user = booking.getUser();
+        return new BookingConfirmationEmailData(
+                user.getEmail(), user.getName(), booking.getBookingUuid(), hotel.getName(), hotel.getCity(),
+                hotel.getAddress(), room.getRoomNumber(), room.getCategory(), room.getCapacity(),
+                booking.getStartDate(), booking.getEndDate(), nights, payment.getAmount(), payment.getMethod(),
+                payment.getTransactionId());
     }
 }

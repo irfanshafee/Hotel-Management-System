@@ -6,11 +6,23 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    hikari:
+      # The Supabase session pool is small; local testing does not need the
+      # default ten connections while Railway is also online.
+      maximum-pool-size: 3
   jpa:
     hibernate:
-      ddl-auto: update
+      # Local now intentionally uses the deployed schema.  Hibernate must not
+      # alter it from a developer machine.
+      ddl-auto: none
     show-sql: true
+    properties:
+      hibernate:
+        # Preserve PostgreSQL's case-sensitive schema name exactly.
+        default_schema: '"Production"'
   flyway:
+    # Production migrations run in the Railway prod profile.  This local
+    # profile only uses the already-migrated Production schema.
     enabled: false
 
 app:

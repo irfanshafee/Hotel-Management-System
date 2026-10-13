@@ -1,0 +1,210 @@
+{
+  "info": {
+    "name": "Transport Service - Phases 3 to 7",
+    "description": "Run Hotel Service on 8080 and Transport Service on 8081. Execute requests in order. Update login credentials before running.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {"key": "hotelBaseUrl", "value": "http://localhost:8080"},
+    {"key": "transportBaseUrl", "value": "http://localhost:8081"},
+    {"key": "token", "value": ""},
+    {"key": "tokenB", "value": ""},
+    {"key": "tripId", "value": "1"},
+    {"key": "otherTripId", "value": "2"},
+    {"key": "seatId", "value": "1"}
+  ],
+  "item": [
+    {
+      "name": "1 - Authentication",
+      "item": [
+        {
+          "name": "Login User A",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Login succeeded', () => pm.response.to.have.status(200));",
+                "const body = pm.response.json();",
+                "if (body.data && body.data.token) pm.collectionVariables.set('token', body.data.token);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "auth": {"type": "noauth"},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"postmantest@gmail.com\",\n  \"password\": \"TestPassword123\"\n}"
+            },
+            "url": "{{hotelBaseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Verify User Through Transport",
+          "request": {
+            "method": "GET",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": "{{transportBaseUrl}}/api/users/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - Browse",
+      "item": [
+        {
+          "name": "Search Dhaka to Chattogram",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Trips returned', () => pm.response.to.have.status(200));",
+                "const body = pm.response.json();",
+                "if (body.data && body.data.length) pm.collectionVariables.set('tripId', body.data[0].tripId);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "auth": {"type": "noauth"},
+            "url": "{{transportBaseUrl}}/api/trips?origin=Dhaka&destination=Chattogram&date=2027-01-01"
+          }
+        },
+        {
+          "name": "Get Available Seats",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Seats returned', () => pm.response.to.have.status(200));",
+                "const body = pm.response.json();",
+                "const seat = body.data && body.data.seats && body.data.seats.find(item => item.available);",
+                "if (seat) pm.collectionVariables.set('seatId', seat.seatId);"
+              ]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "auth": {"type": "noauth"},
+            "url": "{{transportBaseUrl}}/api/trips/{{tripId}}/seats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 - Booking",
+      "item": [
+        {
+          "name": "Book Selected Seat",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Booking created', () => pm.response.to.have.status(201));",
+                "const body = pm.response.json();",
+                "pm.test('Booking is confirmed', () => pm.expect(body.data.status).to.eql('CONFIRMED'));"
+              ]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"tripId\": {{tripId}},\n  \"seatIds\": [{{seatId}}]\n}"},
+            "url": "{{transportBaseUrl}}/api/bookings"
+          }
+        },
+        {
+          "name": "Confirm Seat Became Unavailable",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "const body = pm.response.json();",
+                "const selected = body.data.seats.find(item => String(item.seatId) === String(pm.collectionVariables.get('seatId')));",
+                "pm.test('Selected seat is unavailable', () => pm.expect(selected.available).to.eql(false));"
+              ]
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "auth": {"type": "noauth"},
+            "url": "{{transportBaseUrl}}/api/trips/{{tripId}}/seats"
+          }
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "url": "{{transportBaseUrl}}/api/bookings/my"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 - Conflict and Cross-Trip Tests",
+      "item": [
+        {
+          "name": "Same Trip and Seat Must Conflict",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('Double booking rejected', () => pm.response.to.have.status(409));"]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"tripId\": {{tripId}},\n  \"seatIds\": [{{seatId}}]\n}"},
+            "url": "{{transportBaseUrl}}/api/bookings"
+          }
+        },
+        {
+          "name": "Same Physical Seat on Another Trip",
+          "description": "Seed trip 2 uses the same vehicle as trip 1. This should return 201 if the other trip remains available.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('Seat can be booked on another trip', () => pm.response.to.have.status(201));"]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"tripId\": {{otherTripId}},\n  \"seatIds\": [{{seatId}}]\n}"},
+            "url": "{{transportBaseUrl}}/api/bookings"
+          }
+        },
+        {
+          "name": "Optional User B Conflict",
+          "description": "Set collection variable tokenB to a second user's JWT. The already booked trip/seat must still return 409.",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": ["pm.test('User B cannot double book', () => pm.response.to.have.status(409));"]
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{tokenB}}", "type": "string"}]},
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"tripId\": {{tripId}},\n  \"seatIds\": [{{seatId}}]\n}"},
+            "url": "{{transportBaseUrl}}/api/bookings"
+          }
+        }
+      ]
+    }
+  ]
+}

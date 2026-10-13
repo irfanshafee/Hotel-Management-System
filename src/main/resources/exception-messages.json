@@ -3,6 +3,12 @@
     "status": 409,
     "message": "An account with this email already exists"
   },
+  "signup.verification.not-found": {"status": 400, "message": "No pending signup verification was found."},
+  "signup.otp.invalid": {"status": 400, "message": "Invalid verification code."},
+  "signup.otp.expired": {"status": 400, "message": "Verification code has expired."},
+  "signup.otp.attempts.exceeded": {"status": 400, "message": "Too many incorrect verification attempts. Request a new code."},
+  "signup.otp.cooldown": {"status": 429, "message": "Please wait before requesting another verification code."},
+  "signup.email.delivery.failed": {"status": 503, "message": "Unable to send verification code. Please try again later."},
   "invalid.credentials": {
     "status": 401,
     "message": "Invalid email or password"

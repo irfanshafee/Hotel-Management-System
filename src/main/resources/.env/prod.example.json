@@ -3,5 +3,6 @@
   "DB_USERNAME": "replace-with-production-database-user",
   "DB_PASSWORD": "replace-with-production-database-password",
   "JWT_SECRET": "replace-with-base64-encoded-secret-of-at-least-32-bytes",
-  "JWT_EXPIRATION": "86400000"
+  "JWT_EXPIRATION": "86400000",
+  "REDIS_URL": "rediss://default:replace-with-upstash-password@replace-with-host.upstash.io:6379"
 }

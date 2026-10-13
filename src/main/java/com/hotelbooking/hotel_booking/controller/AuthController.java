@@ -6,9 +6,12 @@ import com.hotelbooking.hotel_booking.dto.LoginRequest;
 import com.hotelbooking.hotel_booking.dto.ForgotPasswordRequest;
 import com.hotelbooking.hotel_booking.dto.RegisterRequest;
 import com.hotelbooking.hotel_booking.dto.ResetPasswordRequest;
+import com.hotelbooking.hotel_booking.dto.VerifySignupRequest;
+import com.hotelbooking.hotel_booking.dto.ResendSignupOtpRequest;
 import com.hotelbooking.hotel_booking.service.ApiSuccessMessageCatalog;
 import com.hotelbooking.hotel_booking.service.AuthService;
 import com.hotelbooking.hotel_booking.service.PasswordResetService;
+import com.hotelbooking.hotel_booking.service.SignupVerificationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,21 +26,33 @@ public class AuthController {
     private final AuthService authService;
     private final ApiSuccessMessageCatalog successMessages;
     private final PasswordResetService passwordResetService;
+    private final SignupVerificationService signupVerificationService;
 
     public AuthController(AuthService authService, ApiSuccessMessageCatalog successMessages,
-                          PasswordResetService passwordResetService) {
+                          PasswordResetService passwordResetService,
+                          SignupVerificationService signupVerificationService) {
         this.authService = authService;
         this.successMessages = successMessages;
         this.passwordResetService = passwordResetService;
+        this.signupVerificationService = signupVerificationService;
     }
 
     @PostMapping("/register")
-    ResponseEntity<ApiResponse<AuthResponse>> register(
+    ResponseEntity<ApiResponse<Void>> register(
             @Valid @RequestBody RegisterRequest request) {
-        AuthResponse response = authService.register(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                new ApiResponse<>(HttpStatus.CREATED.value(),
-                        successMessages.get("auth.registered"), response));
+        signupVerificationService.start(request);
+        return ResponseEntity.ok(new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("auth.signup.otp.sent"), null));
+    }
+
+    @PostMapping("/verify-signup")
+    ApiResponse<AuthResponse> verifySignup(@Valid @RequestBody VerifySignupRequest request) {
+        return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("auth.signup.verified"), signupVerificationService.verify(request));
+    }
+
+    @PostMapping("/resend-signup-otp")
+    ApiResponse<Void> resendSignupOtp(@Valid @RequestBody ResendSignupOtpRequest request) {
+        signupVerificationService.resend(request);
+        return new ApiResponse<>(HttpStatus.OK.value(), successMessages.get("auth.signup.otp.sent"), null);
     }
 
     @PostMapping("/login")
