@@ -1,0 +1,203 @@
+{
+  "info": {
+    "name": "Hotel Booking - Admin Configurations",
+    "description": "Checks the admin endpoints for configuration_table, the key/value settings table. Each setting is read and changed by its key.\n\nRun the whole collection in order (Run collection). It changes the signup OTP validity to 10 minutes, verifies it, tries invalid input, then restores the original value.\n\nThe endpoints are currently public (listed in security/open_apis.json), so no login is needed.\n\nChange the `base` collection variable to http://localhost:8080 to test a local run.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base", "value": "https://hotel-management-system-production-b87d.up.railway.app" },
+    { "key": "otpKey", "value": "signup.otp.validity.minutes" },
+    { "key": "newValue", "value": "10" },
+    { "key": "originalValue", "value": "5" }
+  ],
+  "item": [
+    {
+      "name": "1. List all configurations",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const keys = pm.response.json().data.map(c => c.key);",
+              "pm.test('Contains the OTP key', () => pm.expect(keys).to.include(pm.collectionVariables.get('otpKey')));",
+              "console.log('Configuration keys:', keys);"
+            ]
+          }
+        }
+      ],
+      "request": { "method": "GET", "url": "{{base}}/api/admin/configurations" }
+    },
+    {
+      "name": "2. Get OTP validity by key",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const data = pm.response.json().data;",
+              "pm.test('Returns the requested key', () => pm.expect(data.key).to.eql(pm.collectionVariables.get('otpKey')));",
+              "// Remember the current value so the last request can restore it.",
+              "pm.collectionVariables.set('originalValue', data.value);",
+              "console.log('Current value:', data.value, 'updatedAt:', data.updatedAt);"
+            ]
+          }
+        }
+      ],
+      "request": { "method": "GET", "url": "{{base}}/api/admin/configurations/{{otpKey}}" }
+    },
+    {
+      "name": "3. Change OTP validity",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('Success message', () => pm.expect(body.responseMessage).to.eql('Configuration updated successfully'));",
+              "pm.test('New value saved', () => pm.expect(body.data.value).to.eql(pm.collectionVariables.get('newValue')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"value\": \"{{newValue}}\"\n}" },
+        "url": "{{base}}/api/admin/configurations/{{otpKey}}"
+      }
+    },
+    {
+      "name": "4. Confirm the new value is stored",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Table now holds the new value', () =>",
+              "  pm.expect(pm.response.json().data.value).to.eql(pm.collectionVariables.get('newValue')));"
+            ]
+          }
+        }
+      ],
+      "request": { "method": "GET", "url": "{{base}}/api/admin/configurations/{{otpKey}}" }
+    },
+    {
+      "name": "5. Reject 0 (out of range)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Explains the allowed range', () => pm.expect(pm.response.json().responseMessage)",
+              "  .to.eql('Invalid value for signup.otp.validity.minutes: must be a whole number between 1 and 1440'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"value\": \"0\"\n}" },
+        "url": "{{base}}/api/admin/configurations/{{otpKey}}"
+      }
+    },
+    {
+      "name": "6. Reject text (not a number)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Explains the allowed range', () => pm.expect(pm.response.json().responseMessage)",
+              "  .to.eql('Invalid value for signup.otp.validity.minutes: must be a whole number between 1 and 1440'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"value\": \"ten\"\n}" },
+        "url": "{{base}}/api/admin/configurations/{{otpKey}}"
+      }
+    },
+    {
+      "name": "7. Reject missing value",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 400', () => pm.response.to.have.status(400));",
+              "pm.test('Says the value is required', () =>",
+              "  pm.expect(pm.response.json().responseMessage).to.eql('value is required'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{}" },
+        "url": "{{base}}/api/admin/configurations/{{otpKey}}"
+      }
+    },
+    {
+      "name": "8. Reject unknown key",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 404', () => pm.response.to.have.status(404));",
+              "pm.test('Names the missing key', () =>",
+              "  pm.expect(pm.response.json().responseMessage).to.eql('Configuration key not found: no.such.key'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"value\": \"1\"\n}" },
+        "url": "{{base}}/api/admin/configurations/no.such.key"
+      }
+    },
+    {
+      "name": "9. Restore original value",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Original value restored', () =>",
+              "  pm.expect(pm.response.json().data.value).to.eql(pm.collectionVariables.get('originalValue')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"value\": \"{{originalValue}}\"\n}" },
+        "url": "{{base}}/api/admin/configurations/{{otpKey}}"
+      }
+    }
+  ]
+}

@@ -4,19 +4,14 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import com.hotelbooking.hotel_booking.entity.SignupOtpConfiguration;
-import com.hotelbooking.hotel_booking.repository.SignupOtpConfigurationRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Duration;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,10 +19,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class SignupOtpConfigurationServiceTest {
-    private final SignupOtpConfigurationRepository repository =
-            mock(SignupOtpConfigurationRepository.class);
-    private final SignupOtpConfigurationService service = new SignupOtpConfigurationService(
-            repository, mock(PlatformTransactionManager.class));
+    private static final String KEY = "signup.otp.validity.minutes";
+
+    private final ConfigurationService configuration = mock(ConfigurationService.class);
+    private final SignupOtpConfigurationService service = new SignupOtpConfigurationService(configuration);
 
     private final ListAppender<ILoggingEvent> logs = new ListAppender<>();
     private final Logger serviceLogger =
@@ -45,57 +40,38 @@ class SignupOtpConfigurationServiceTest {
     }
 
     @Test
-    void returnsDatabaseValueWhenRowIsValid() {
-        SignupOtpConfiguration row = row(7);
-        when(repository.findById((short) 1)).thenReturn(Optional.of(row));
+    void returnsConfiguredValueReadByKey() {
+        when(configuration.getValue(KEY)).thenReturn("7");
 
         assertEquals(Duration.ofMinutes(7), service.getOtpValidity());
         assertTrue(logs.list.isEmpty());
     }
 
     @Test
-    void returnsDefaultWhenRowIsMissing() {
-        when(repository.findById((short) 1)).thenReturn(Optional.empty());
+    void acceptsSurroundingWhitespace() {
+        when(configuration.getValue(KEY)).thenReturn(" 12 ");
 
-        assertEquals(Duration.ofSeconds(300), service.getOtpValidity());
-        assertWarningLogged();
+        assertEquals(Duration.ofMinutes(12), service.getOtpValidity());
     }
 
     @Test
-    void returnsDefaultWhenValueIsNull() {
-        SignupOtpConfiguration row = row(null);
-        when(repository.findById((short) 1)).thenReturn(Optional.of(row));
+    void returnsDefaultWhenKeyIsMissing() {
+        when(configuration.getValue(KEY)).thenReturn(null);
 
-        assertEquals(Duration.ofSeconds(300), service.getOtpValidity());
+        assertEquals(Duration.ofMinutes(5), service.getOtpValidity());
         assertWarningLogged();
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, -5, 1441, Integer.MAX_VALUE})
-    void returnsDefaultWhenValueIsOutOfRange(int minutes) {
-        SignupOtpConfiguration row = row(minutes);
-        when(repository.findById((short) 1)).thenReturn(Optional.of(row));
+    @ValueSource(strings = {"0", "-5", "1441", "2147483648", "abc", "5.5", ""})
+    void returnsDefaultWhenValueIsInvalid(String value) {
+        when(configuration.getValue(KEY)).thenReturn(value);
 
-        assertEquals(Duration.ofSeconds(300), service.getOtpValidity());
-        assertWarningLogged();
-    }
-
-    @Test
-    void returnsDefaultWhenTableCannotBeRead() {
-        when(repository.findById((short) 1)).thenThrow(new InvalidDataAccessResourceUsageException(
-                "relation \"Production\".signup_otp_configuration does not exist"));
-
-        assertEquals(Duration.ofSeconds(300), service.getOtpValidity());
+        assertEquals(Duration.ofMinutes(5), service.getOtpValidity());
         assertWarningLogged();
     }
 
     private void assertWarningLogged() {
         assertTrue(logs.list.stream().anyMatch(event -> event.getLevel() == Level.WARN));
-    }
-
-    private static SignupOtpConfiguration row(Integer validityMinutes) {
-        SignupOtpConfiguration configuration = mock(SignupOtpConfiguration.class);
-        when(configuration.getValidityMinutes()).thenReturn(validityMinutes);
-        return configuration;
     }
 }

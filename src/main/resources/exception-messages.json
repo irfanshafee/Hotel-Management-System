@@ -3,6 +3,8 @@
     "status": 409,
     "message": "An account with this email already exists"
   },
+  "configuration.not-found": {"status": 404, "message": "Configuration key not found: {0}"},
+  "configuration.value.invalid": {"status": 400, "message": "Invalid value for {0}: must be a whole number between {1} and {2}"},
   "signup.verification.not-found": {"status": 400, "message": "No pending signup verification was found."},
   "signup.otp.invalid": {"status": 400, "message": "Invalid verification code."},
   "signup.otp.expired": {"status": 400, "message": "Verification code has expired."},

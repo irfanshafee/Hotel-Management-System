@@ -41,10 +41,14 @@
   },
   {
     "method": "GET",
-    "path": "/api/admin/settings/signup-otp"
+    "path": "/api/admin/configurations"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/configurations/**"
   },
   {
     "method": "PUT",
-    "path": "/api/admin/settings/signup-otp"
+    "path": "/api/admin/configurations/**"
   }
 ]

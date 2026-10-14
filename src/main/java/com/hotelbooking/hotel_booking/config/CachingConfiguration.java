@@ -24,7 +24,6 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
-import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext.SerializationPair;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -45,7 +44,8 @@ public class CachingConfiguration implements CachingConfigurer {
     public static final String APP_SETTINGS_CACHE = "appSettings";
 
     // Duration.ZERO = never expires. Cached settings stay until evicted by the
-    // admin API (PUT /api/admin/settings/signup-otp calls evictOtpValidity()).
+    // admin API (PUT /api/admin/configurations/{key} calls
+    // ConfigurationService.evict(key)).
     // Consequences: an edit made directly in the database is NOT picked up
     // until someone runs DEL on the Redis key (or calls the admin API), and if
     // an eviction fails because Redis is briefly unreachable, the old value
@@ -80,13 +80,12 @@ public class CachingConfiguration implements CachingConfigurer {
                 .build();
     }
 
-    // The generic serializer writes JDK scalars (Duration, Long, ...) WITHOUT
-    // type information: a Duration comes back as the String "PT5M" and a Long
-    // as an Integer, which would surface as a ClassCastException in the caller
-    // on the first cache hit. appSettings therefore uses a serializer bound to
-    // Duration, its only value type. A setting of another type needs its own cache.
-    static RedisSerializer<Duration> appSettingsSerializer() {
-        return new JacksonJsonRedisSerializer<>(Duration.class);
+    // appSettings holds raw configuration_table values, always Strings, stored
+    // as plain text (e.g. "5"). The generic JSON serializer below is not used
+    // here: it drops type information for JDK scalars, so values could come
+    // back as a different type than was cached.
+    static RedisSerializer<String> appSettingsSerializer() {
+        return StringRedisSerializer.UTF_8;
     }
 
     // Default for other caches. Spring Boot 4 uses Jackson 3 (tools.jackson),

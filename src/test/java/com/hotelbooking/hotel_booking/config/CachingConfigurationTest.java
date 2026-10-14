@@ -1,100 +1,112 @@
 package com.hotelbooking.hotel_booking.config;
 
-import com.hotelbooking.hotel_booking.entity.SignupOtpConfiguration;
-import com.hotelbooking.hotel_booking.repository.SignupOtpConfigurationRepository;
+import com.hotelbooking.hotel_booking.entity.ConfigurationEntry;
+import com.hotelbooking.hotel_booking.repository.ConfigurationEntryRepository;
+import com.hotelbooking.hotel_booking.service.ConfigurationAdminService;
+import com.hotelbooking.hotel_booking.service.ConfigurationService;
 import com.hotelbooking.hotel_booking.service.SignupOtpConfigurationService;
-import com.hotelbooking.hotel_booking.service.SignupOtpSettingsAdminService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
-import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.cache.support.AbstractValueAdaptingCache;
+import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CachingConfigurationTest {
-    private static final short CONFIGURATION_ID = 1;
+    private static final String OTP_KEY = "signup.otp.validity.minutes";
 
-    private final SignupOtpConfigurationRepository repository =
-            mock(SignupOtpConfigurationRepository.class);
+    private final ConfigurationEntryRepository repository = mock(ConfigurationEntryRepository.class);
+    private final ConfigurationEntry otpEntry = entry("7");
 
     private ApplicationContextRunner runner() {
-        SignupOtpConfiguration row = mock(SignupOtpConfiguration.class);
-        when(row.getValidityMinutes()).thenReturn(7);
-        when(repository.findById(CONFIGURATION_ID)).thenReturn(Optional.of(row));
+        when(repository.findById(OTP_KEY)).thenReturn(Optional.of(otpEntry));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         return new ApplicationContextRunner()
                 .withUserConfiguration(CachingConfiguration.class)
-                .withBean(SignupOtpConfigurationService.class, () -> new SignupOtpConfigurationService(
-                        repository, mock(PlatformTransactionManager.class)));
+                .withBean(ConfigurationEntryRepository.class, () -> repository)
+                .withBean(ConfigurationService.class)
+                .withBean(SignupOtpConfigurationService.class)
+                .withBean(ConfigurationAdminService.class);
     }
 
     @Test
-    void blankRedisUrlUsesInMemoryCache() {
+    void blankRedisUrlUsesInMemoryCacheKeyedByConfigKey() {
         runner().withPropertyValues("spring.data.redis.url=").run(context -> {
-            assertThat(context.getBean(CacheManager.class))
-                    .isInstanceOf(ConcurrentMapCacheManager.class);
+            CacheManager cacheManager = context.getBean(CacheManager.class);
+            assertThat(cacheManager).isInstanceOf(ConcurrentMapCacheManager.class);
 
             SignupOtpConfigurationService service = context.getBean(SignupOtpConfigurationService.class);
             assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(7));
             assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(7));
-            verify(repository, times(1)).findById(CONFIGURATION_ID);
+            verify(repository, times(1)).findById(OTP_KEY);
 
-            service.evictOtpValidity();
+            // The cache entry is stored under the configuration key itself.
+            assertThat(cacheManager.getCache(CachingConfiguration.APP_SETTINGS_CACHE)
+                    .get(OTP_KEY).get()).isEqualTo("7");
+
+            context.getBean(ConfigurationService.class).evict(OTP_KEY);
             service.getOtpValidity();
-            verify(repository, times(2)).findById(CONFIGURATION_ID);
+            verify(repository, times(2)).findById(OTP_KEY);
+        });
+    }
+
+    @Test
+    void missingValueIsNotCachedSoALaterReadRetries() {
+        runner().withPropertyValues("spring.data.redis.url=").run(context -> {
+            when(repository.findById(OTP_KEY)).thenReturn(Optional.empty());
+            ConfigurationService configuration = context.getBean(ConfigurationService.class);
+
+            assertThat(configuration.getValue(OTP_KEY)).isNull();
+            assertThat(configuration.getValue(OTP_KEY)).isNull();
+
+            verify(repository, times(2)).findById(OTP_KEY);
         });
     }
 
     @Test
     void appSettingsEntriesNeverExpire() {
         RedisCacheManager cacheManager = CachingConfiguration.redisCacheManager(
-                mock(org.springframework.data.redis.connection.RedisConnectionFactory.class));
+                mock(RedisConnectionFactory.class));
         cacheManager.initializeCaches();
 
         assertThat(cacheManager.getCacheConfigurations()
                 .get(CachingConfiguration.APP_SETTINGS_CACHE)
                 .getTtlFunction()
-                .getTimeToLive("otp.validity.seconds", Duration.ofMinutes(5)))
+                .getTimeToLive(OTP_KEY, "5"))
                 .isEqualTo(Duration.ZERO);
     }
 
     @Test
     void adminUpdateEvictsCacheSoNextReadSeesNewValue() {
-        SignupOtpConfiguration row = new SignupOtpConfiguration(CONFIGURATION_ID);
-        row.updateValidityMinutes(5, java.time.LocalDateTime.now());
-        runner().withPropertyValues("spring.data.redis.url=")
-                .withBean(SignupOtpConfigurationRepository.class, () -> repository)
-                .withBean(SignupOtpSettingsAdminService.class)
-                .run(context -> {
-                    when(repository.findById(CONFIGURATION_ID)).thenReturn(Optional.of(row));
-                    when(repository.save(org.mockito.ArgumentMatchers.any()))
-                            .thenAnswer(invocation -> invocation.getArgument(0));
-                    SignupOtpConfigurationService service =
-                            context.getBean(SignupOtpConfigurationService.class);
+        runner().withPropertyValues("spring.data.redis.url=").run(context -> {
+            SignupOtpConfigurationService service = context.getBean(SignupOtpConfigurationService.class);
 
-                    assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(5));
-                    assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(5)); // cached
+            assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(7));
+            assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(7)); // cached
 
-                    context.getBean(SignupOtpSettingsAdminService.class).updateValidityMinutes(10);
+            context.getBean(ConfigurationAdminService.class).update(OTP_KEY, "10");
 
-                    // Eviction went through the real cache proxy, so the new value is read at once.
-                    assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(10));
-                });
+            // Eviction went through the real cache proxy, so the new value is read at once.
+            assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(10));
+        });
     }
 
     @ParameterizedTest
@@ -136,10 +148,10 @@ class CachingConfigurationTest {
 
                     assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(7));
                     assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(7));
-                    service.evictOtpValidity();
+                    context.getBean(ConfigurationService.class).evict(OTP_KEY);
 
                     // Every get failed, so every call went to the database.
-                    verify(repository, times(2)).findById(CONFIGURATION_ID);
+                    verify(repository, times(2)).findById(OTP_KEY);
                 });
     }
 
@@ -156,19 +168,26 @@ class CachingConfigurationTest {
                             context.getBean(SignupOtpConfigurationService.class);
                     assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(7));
                     assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(7));
-                    service.evictOtpValidity();
+                    context.getBean(ConfigurationService.class).evict(OTP_KEY);
 
-                    verify(repository, times(2)).findById(CONFIGURATION_ID);
+                    verify(repository, times(2)).findById(OTP_KEY);
                 });
     }
 
     @Test
-    void appSettingsSerializerRoundTripsDuration() {
-        RedisSerializer<Duration> serializer = CachingConfiguration.appSettingsSerializer();
+    void appSettingsSerializerStoresPlainText() {
+        RedisSerializer<String> serializer = CachingConfiguration.appSettingsSerializer();
 
-        Object restored = serializer.deserialize(serializer.serialize(Duration.ofMinutes(5)));
+        byte[] stored = serializer.serialize("5");
 
-        assertThat(restored).isInstanceOf(Duration.class).isEqualTo(Duration.ofMinutes(5));
+        assertThat(new String(stored, java.nio.charset.StandardCharsets.UTF_8)).isEqualTo("5");
+        assertThat(serializer.deserialize(stored)).isEqualTo("5");
+    }
+
+    private static ConfigurationEntry entry(String value) {
+        ConfigurationEntry entry = new ConfigurationEntry(OTP_KEY, "test");
+        entry.updateValue(value, LocalDateTime.now());
+        return entry;
     }
 
     private static CacheManager brokenCacheManager() {
