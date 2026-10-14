@@ -3,6 +3,7 @@ package com.hotelbooking.hotel_booking.config;
 import com.hotelbooking.hotel_booking.entity.SignupOtpConfiguration;
 import com.hotelbooking.hotel_booking.repository.SignupOtpConfigurationRepository;
 import com.hotelbooking.hotel_booking.service.SignupOtpConfigurationService;
+import com.hotelbooking.hotel_booking.service.SignupOtpSettingsAdminService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -57,6 +58,43 @@ class CachingConfigurationTest {
             service.getOtpValidity();
             verify(repository, times(2)).findById(CONFIGURATION_ID);
         });
+    }
+
+    @Test
+    void appSettingsEntriesNeverExpire() {
+        RedisCacheManager cacheManager = CachingConfiguration.redisCacheManager(
+                mock(org.springframework.data.redis.connection.RedisConnectionFactory.class));
+        cacheManager.initializeCaches();
+
+        assertThat(cacheManager.getCacheConfigurations()
+                .get(CachingConfiguration.APP_SETTINGS_CACHE)
+                .getTtlFunction()
+                .getTimeToLive("otp.validity.seconds", Duration.ofMinutes(5)))
+                .isEqualTo(Duration.ZERO);
+    }
+
+    @Test
+    void adminUpdateEvictsCacheSoNextReadSeesNewValue() {
+        SignupOtpConfiguration row = new SignupOtpConfiguration(CONFIGURATION_ID);
+        row.updateValidityMinutes(5, java.time.LocalDateTime.now());
+        runner().withPropertyValues("spring.data.redis.url=")
+                .withBean(SignupOtpConfigurationRepository.class, () -> repository)
+                .withBean(SignupOtpSettingsAdminService.class)
+                .run(context -> {
+                    when(repository.findById(CONFIGURATION_ID)).thenReturn(Optional.of(row));
+                    when(repository.save(org.mockito.ArgumentMatchers.any()))
+                            .thenAnswer(invocation -> invocation.getArgument(0));
+                    SignupOtpConfigurationService service =
+                            context.getBean(SignupOtpConfigurationService.class);
+
+                    assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(5));
+                    assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(5)); // cached
+
+                    context.getBean(SignupOtpSettingsAdminService.class).updateValidityMinutes(10);
+
+                    // Eviction went through the real cache proxy, so the new value is read at once.
+                    assertThat(service.getOtpValidity()).isEqualTo(Duration.ofMinutes(10));
+                });
     }
 
     @ParameterizedTest

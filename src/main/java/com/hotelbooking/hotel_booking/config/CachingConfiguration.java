@@ -44,10 +44,13 @@ import java.time.Duration;
 public class CachingConfiguration implements CachingConfigurer {
     public static final String APP_SETTINGS_CACHE = "appSettings";
 
-    // Settings may be edited directly in the database, and PostgreSQL has no
-    // way to notify the application. This TTL is what makes such a direct edit
-    // take effect (within a minute) without a redeploy or manual eviction.
-    static final Duration APP_SETTINGS_TTL = Duration.ofSeconds(60);
+    // Duration.ZERO = never expires. Cached settings stay until evicted by the
+    // admin API (PUT /api/admin/settings/signup-otp calls evictOtpValidity()).
+    // Consequences: an edit made directly in the database is NOT picked up
+    // until someone runs DEL on the Redis key (or calls the admin API), and if
+    // an eviction fails because Redis is briefly unreachable, the old value
+    // stays until the next successful eviction.
+    static final Duration APP_SETTINGS_TTL = Duration.ZERO;
 
     // Namespaces every key so the Upstash database can be shared later.
     static final String KEY_PREFIX = "hotelbooking:";

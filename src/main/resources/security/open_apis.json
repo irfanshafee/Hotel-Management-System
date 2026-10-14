@@ -38,5 +38,13 @@
   {
     "method": "GET",
     "path": "/api/rooms/**"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/settings/signup-otp"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/admin/settings/signup-otp"
   }
 ]

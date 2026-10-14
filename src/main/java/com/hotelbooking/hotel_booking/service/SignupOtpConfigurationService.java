@@ -22,7 +22,7 @@ public class SignupOtpConfigurationService {
     static final Duration MIN_OTP_VALIDITY = Duration.ofSeconds(30);
     static final Duration MAX_OTP_VALIDITY = Duration.ofSeconds(86_400);
 
-    private static final short CONFIGURATION_ID = 1;
+    static final short CONFIGURATION_ID = 1;
 
     private final SignupOtpConfigurationRepository repository;
     private final TransactionTemplate readInOwnTransaction;

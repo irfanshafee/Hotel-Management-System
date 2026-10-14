@@ -1,5 +1,7 @@
 {
   "auth.registered": "User registered successfully",
+  "admin.signup-otp.retrieved": "Signup OTP settings retrieved successfully",
+  "admin.signup-otp.updated": "Signup OTP validity updated successfully",
   "auth.signup.otp.sent": "Verification code sent",
   "auth.signup.verified": "Account created successfully",
   "auth.login": "Login successful",

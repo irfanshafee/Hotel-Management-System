@@ -22,7 +22,20 @@ public class SignupOtpConfiguration {
     protected SignupOtpConfiguration() {
     }
 
+    public SignupOtpConfiguration(Short id) {
+        this.id = id;
+    }
+
+    public void updateValidityMinutes(int validityMinutes, LocalDateTime updatedAt) {
+        this.validityMinutes = validityMinutes;
+        this.updatedAt = updatedAt;
+    }
+
     public Integer getValidityMinutes() {
         return validityMinutes;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 }
